@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Knowledge base — Spec Dashboard</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <style>
+    .kb-intro {
+      max-width: 720px;
+      margin: 0 0 28px;
+      color: var(--text-muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .kb-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 16px;
+    }
+    .kb-entry {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 22px 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.12s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .kb-entry::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px; height: 100%;
+      background: linear-gradient(180deg, var(--gold-soft), var(--accent));
+    }
+    .kb-entry:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px -10px rgba(217, 119, 6, 0.3), 0 2px 4px rgba(20, 16, 8, 0.06);
+      border-color: var(--gold);
+    }
+    .kb-entry h2 {
+      margin: 0;
+      font-size: 19px;
+      letter-spacing: -0.015em;
+      font-weight: 700;
+    }
+    .kb-entry h2 a { color: var(--text); }
+    .kb-entry h2 a:hover { color: var(--accent); }
+    .kb-entry .kb-entry-summary {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .kb-entry .kb-entry-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--text-faint);
+      margin-top: 4px;
+      align-items: center;
+    }
+    .kb-entry .kb-entry-meta .tag {
+      background: rgba(217, 119, 6, 0.08);
+      border: 1px solid rgba(217, 119, 6, 0.25);
+      border-radius: 999px;
+      padding: 1px 9px;
+      color: var(--gold);
+      font-weight: 600;
+    }
+    .kb-add {
+      margin-top: 32px;
+      padding: 16px 20px;
+      background: var(--surface);
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .kb-add strong {
+      display: block;
+      color: var(--text);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <div>
+        <h1>Knowledge base</h1>
+        <div class="subtitle">Background research and reference material. Companion to the <a href="index.html">spec dashboard</a>.</div>
+      </div>
+      <nav>
+        <a href="index.html">← Spec dashboard</a>
+        <a href="README.md">How this works</a>
+      </nav>
+    </header>
+
+    <main>
+      <p class="kb-intro">
+        Knowledge entries answer "where does this come from?" and "what's the prior
+        art?" — they don't track shippable work (the <a href="index.html">feature specs</a>
+        do that) but they influence which specs you write and how you scope them.
+        Each entry can cross-link to the specs it informs.
+      </p>
+
+      <div class="kb-list">
+        <article class="kb-entry">
+          <h2><a href="knowledge/example-research.html">Example research entry →</a></h2>
+          <p class="kb-entry-summary">
+            Shows the shape of a knowledge entry: a long-form HTML page with
+            cards, tables, and an optional Mermaid diagram. Replace this with
+            your own research notes, sources, prior art, or architectural
+            decisions.
+          </p>
+          <div class="kb-entry-meta">
+            <span class="tag">example</span>
+            <span class="tag">research</span>
+            <span>·</span>
+            <span>Updated 2026-05-11</span>
+          </div>
+        </article>
+      </div>
+
+      <aside class="kb-add">
+        <strong>Adding a knowledge entry</strong>
+        Drop an HTML file in <code>knowledge/</code>, add a card above, and link it from any specs it influences. The pattern mirrors how <code>specs/</code> works but without the status/priority machinery — knowledge entries are reference material, not shippable work items.
+      </aside>
+    </main>
+
+    <footer style="margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color:var(--text-faint);font-size:12px;">
+      Static HTML. No build step. Edit <code>knowledge.html</code> + <code>knowledge/*.html</code> to keep it in sync.
+    </footer>
+  </div>
+</body>
+</html>

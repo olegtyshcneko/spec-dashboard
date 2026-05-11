@@ -1,0 +1,15 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Playwright MCP artifacts (if anyone debugs with browser tooling)
+.playwright-mcp/
+
+# Build output (none expected — repo is intentionally static)
+dist/
+build/
+node_modules/

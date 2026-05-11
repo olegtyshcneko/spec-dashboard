@@ -1,0 +1,116 @@
+<!doctype html>
+<!--
+  HOW TO USE THIS TEMPLATE
+  ========================
+  1. Copy this file to `specs/<slug>.html` where <slug> is kebab-case,
+     e.g. `payment-flow-v2.html`.
+  2. Fill in every <!-- FILL --> marker. Delete sections you don't need
+     (open-questions, decisions, etc.). Don't delete frontmatter fields,
+     leave them empty if N/A.
+  3. Add a matching entry to ../data.js:
+       { slug, title, status, priority, summary, tags, updated, href }
+  4. Bump the `updated` ISO date both here and in data.js when you
+     change anything substantial.
+
+  Status (pick one): implemented | wip | backlog | nice-to-have | known-issue
+  Priority (pick one): p0 | p1 | p2
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FILL — Spec Dashboard</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <script type="application/json" id="spec-meta">
+    {
+      "slug": "fill-slug",
+      "title": "FILL",
+      "status": "backlog",
+      "priority": "p2",
+      "owner": "",
+      "tags": [],
+      "created": "YYYY-MM-DD",
+      "updated": "YYYY-MM-DD",
+      "related_files": []
+    }
+  </script>
+</head>
+<body>
+  <article class="detail">
+    <div class="crumb"><a href="../index.html">← Dashboard</a></div>
+
+    <header>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span class="pill" data-status="backlog">Backlog</span>
+        <span class="prio" data-prio="p2" title="Priority p2"></span>
+      </div>
+      <h1>FILL — title</h1>
+      <p class="summary">FILL — 1–3 sentence elevator pitch. What user-visible value does this deliver and to whom?</p>
+
+      <dl class="spec-meta">
+        <dt>Owner</dt>     <dd>FILL or <em>unassigned</em></dd>
+        <dt>Tags</dt>      <dd>FILL — comma-separated</dd>
+        <dt>Created</dt>   <dd>YYYY-MM-DD</dd>
+        <dt>Updated</dt>   <dd>YYYY-MM-DD</dd>
+        <dt>Related</dt>   <dd>
+          <ul class="files-list">
+            <li><code>path/to/file.ts</code></li>
+          </ul>
+        </dd>
+      </dl>
+    </header>
+
+    <section>
+      <h2>User stories</h2>
+
+      <div class="story">
+        <p><span class="role">As a</span> <strong>FILL — persona</strong>, <span class="role">I want</span> <strong>FILL — capability</strong>, <span class="role">so that</span> <strong>FILL — outcome</strong>.</p>
+        <ul class="ac">
+          <li><strong>Given</strong> FILL, <strong>when</strong> FILL, <strong>then</strong> FILL.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <h2>TODO</h2>
+      <ul class="todo">
+        <li data-done="true">Initial scaffold</li>
+        <li data-done="wip">FILL — current work</li>
+        <li>FILL — next step</li>
+        <li data-done="blocked">FILL — blocked on something</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Decisions</h2>
+      <details class="decision">
+        <summary>FILL — decision title</summary>
+        <div class="dec-body">
+          <p><span class="label">Context</span><br>FILL — what forced the decision.</p>
+          <p><span class="label">Decision</span><br>FILL — what was chosen.</p>
+          <p><span class="label">Consequence</span><br>FILL — what this implies, good and bad.</p>
+        </div>
+      </details>
+    </section>
+
+    <section>
+      <h2>Open questions</h2>
+      <ul>
+        <li>FILL — uncertainty parked here, not yet a TODO.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Out of scope</h2>
+      <ul>
+        <li>FILL — things this spec deliberately does <em>not</em> cover.</li>
+      </ul>
+    </section>
+
+    <footer class="detail-foot">
+      <a href="../index.html">← Back to dashboard</a>
+      <span class="mono">spec slug: <code>fill-slug</code></span>
+    </footer>
+  </article>
+</body>
+</html>

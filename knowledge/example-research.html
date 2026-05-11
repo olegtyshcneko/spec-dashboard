@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Example research entry — Spec Dashboard</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <style>
+    .mermaid-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin: 14px 0;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="crumb" style="font-size: 13px; margin-bottom: 12px;"><a href="../knowledge.html">← Knowledge base</a> · <a href="../index.html">Spec dashboard</a></div>
+
+    <article class="detail">
+      <header>
+        <h1>Example research entry</h1>
+        <p class="summary">Knowledge entries are long-form reference pages: research summaries, prior-art catalogs, architectural decisions that span multiple specs. They use the same chrome as spec pages (header, sections, footer) but don't carry status/priority — they're reference material, not work items. Cross-link from the specs they influence.</p>
+
+        <dl class="spec-meta">
+          <dt>Source</dt>      <dd>Replace with any external doc / link / paper that this entry summarizes</dd>
+          <dt>Updated</dt>     <dd>2026-05-11</dd>
+          <dt>Influences</dt>  <dd>Link to the specs this research informs, e.g. <a href="../specs/example-backlog.html">example-backlog</a></dd>
+        </dl>
+      </header>
+
+      <section>
+        <h2>What this is</h2>
+        <p>Describe the topic of the entry in 1–2 paragraphs. Knowledge entries
+        are valuable when:</p>
+        <ul>
+          <li>Multiple specs draw on the same underlying research / prior art and
+          you don't want to duplicate the analysis in each spec.</li>
+          <li>A decision affects the whole project but isn't a "feature" in the
+          usual sense — licensing, vendor choice, content sourcing, etc.</li>
+          <li>You need a place to keep links, citations, or background reading
+          that would otherwise rot in someone's bookmarks.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Optional: embedded Mermaid diagram</h2>
+        <p>The dashboard supports inline Mermaid diagrams via a CDN-loaded
+        script — handy for source-to-feature maps, dependency graphs, or
+        architecture overviews. Diagrams are progressively enhanced: if the CDN
+        fails or JS is off, the raw source still reads fine.</p>
+        <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+  R["Research / source"] --> A["Spec A"]
+  R --> B["Spec B"]
+  A --> Feat["Feature you ship"]
+  B --> Feat
+</pre>
+        </div>
+      </section>
+
+      <section>
+        <h2>Optional: a table</h2>
+        <p>For comparisons (licenses, vendors, approaches), the spec-meta
+        block isn't enough — drop in a plain HTML table. The default stylesheet
+        keeps tables readable without needing per-page overrides.</p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:8px;">
+          <thead>
+            <tr style="background:var(--surface-muted);">
+              <th style="text-align:left;padding:8px 12px;border:1px solid var(--border);">Option</th>
+              <th style="text-align:left;padding:8px 12px;border:1px solid var(--border);">Trade-off</th>
+              <th style="text-align:left;padding:8px 12px;border:1px solid var(--border);">Verdict</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:8px 12px;border:1px solid var(--border);">Option A</td>
+              <td style="padding:8px 12px;border:1px solid var(--border);">Faster, more constrained</td>
+              <td style="padding:8px 12px;border:1px solid var(--border);">Pick when X</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 12px;border:1px solid var(--border);">Option B</td>
+              <td style="padding:8px 12px;border:1px solid var(--border);">Flexible, slower</td>
+              <td style="padding:8px 12px;border:1px solid var(--border);">Pick when Y</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <footer class="detail-foot">
+        <a href="../knowledge.html">← Knowledge base</a>
+        <span class="mono">file: <code>knowledge/example-research.html</code></span>
+      </footer>
+    </article>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    if (window.mermaid) {
+      window.mermaid.initialize({
+        startOnLoad: true,
+        theme: "neutral",
+        flowchart: { useMaxWidth: true, htmlLabels: true, curve: "basis" },
+      });
+    }
+  </script>
+</body>
+</html>

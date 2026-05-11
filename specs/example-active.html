@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Example: active work — Spec Dashboard</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <script type="application/json" id="spec-meta">
+    {"slug":"example-active","title":"Example: active work","status":"wip","priority":"p0","tags":["example"],"updated":"2026-05-11"}
+  </script>
+</head>
+<body>
+  <article class="detail">
+    <div class="crumb"><a href="../index.html">← Dashboard</a></div>
+
+    <header>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span class="pill" data-status="wip">In Progress</span>
+        <span class="prio" data-prio="p0" title="Priority p0"></span>
+      </div>
+      <h1>Example: active work</h1>
+      <p class="summary">This is what a spec looks like while it's actively being built. Use this status to capture the current shape of the work in progress: what's already locked in via decisions, what's still TODO, and what's blocked. WIP specs are the highest-churn ones — bump the <code>updated</code> date often.</p>
+
+      <dl class="spec-meta">
+        <dt>Owner</dt>     <dd>Replace with the person actively working on it</dd>
+        <dt>Tags</dt>      <dd>example</dd>
+        <dt>Created</dt>   <dd>2026-05-11</dd>
+        <dt>Updated</dt>   <dd>2026-05-11</dd>
+      </dl>
+    </header>
+
+    <section>
+      <h2>User stories</h2>
+      <div class="story">
+        <p><span class="role">As a</span> <strong>user</strong>, <span class="role">I want</span> the in-progress capability, <span class="role">so that</span> the work-in-progress outcome is delivered.</p>
+        <ul class="ac">
+          <li><strong>Given</strong> a precondition, <strong>when</strong> action, <strong>then</strong> outcome.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <h2>TODO</h2>
+      <ul class="todo">
+        <li data-done="true">Design agreed upon</li>
+        <li data-done="wip">Implementation in progress</li>
+        <li>Tests covering edge cases</li>
+        <li data-done="blocked">Production deploy — blocked on dependency</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Open questions</h2>
+      <ul>
+        <li>Things you haven't decided yet but need to before shipping. Park them here so they don't get lost.</li>
+      </ul>
+    </section>
+
+    <footer class="detail-foot">
+      <a href="../index.html">← Back to dashboard</a>
+      <span class="mono">spec slug: <code>example-active</code></span>
+    </footer>
+  </article>
+</body>
+</html>
