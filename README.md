@@ -15,13 +15,13 @@ Useful when you want one canonical place to answer:
 
 ```
 spec-dashboard/
-├── index.html                 # Dashboard home (filters + rail + status sections)
+├── index.html                 # Dashboard home (filters + status tabs + Jira-style list)
 ├── data.js                    # Manifest of every spec — edit this when adding/removing/updating
 ├── knowledge.html             # Knowledge base index (optional, remove if not needed)
 ├── _template.html             # Copy this when creating a new spec
 ├── assets/
 │   ├── style.css              # All styling (warm cream palette, gold/red accents)
-│   └── dashboard.js           # Renders filters, rail, and status sections from data.js
+│   └── dashboard.js           # Renders filters, status tabs, and the spec list from data.js
 ├── specs/
 │   └── example-*.html         # Example spec pages — one per status type
 ├── knowledge/
@@ -79,12 +79,12 @@ Then host the `dashboard/` folder however you serve static files.
      priority: "p1",             // p0 | p1 | p2
      summary: "1–2 sentence elevator pitch.",
      tags: ["whatever", "you", "want"],
-     updated: "2026-05-11",      // ISO date, sorts the "Recently updated" rail
+     updated: "2026-05-11",      // ISO date, shown in the row meta as "3d ago", etc.
      href: "specs/my-feature.html",
    },
    ```
 
-4. Reload the dashboard. Your new card appears in the matching status section.
+4. Reload the dashboard. Your new spec appears as a row under the matching status tab.
 
 That's it. No build, no migration, no CMS.
 

@@ -1,17 +1,30 @@
-// Przypadky Feature Dashboard — index page logic
-// Reads window.SPECS (set by data.js) and renders sections + filters.
-// Pure DOM. No build step. Works on file://
+// Spec Dashboard — index page logic
+// Reads window.SPECS (set by data.js) and renders filters + status tabs + list.
+// Pure DOM. No build step.
 
 (function () {
   "use strict";
 
   const SECTIONS = [
-    { key: "wip",          title: "In Progress",  blurb: "Actively being built or smoke-tested." },
-    { key: "implemented",  title: "Implemented",  blurb: "Shipped on staging or main; covered by tests." },
-    { key: "backlog",      title: "Backlog",      blurb: "Planned but not started." },
-    { key: "nice-to-have", title: "Nice to have", blurb: "Would be cool — not blocking anything." },
-    { key: "known-issue",  title: "Known Issues", blurb: "Bugs or gaps we know about." },
+    { key: "wip",          title: "In Progress" },
+    { key: "implemented",  title: "Implemented" },
+    { key: "backlog",      title: "Backlog" },
+    { key: "nice-to-have", title: "Nice to have" },
+    { key: "known-issue",  title: "Known Issues" },
   ];
+
+  // Order used when the "All" tab is active. Tab order above stays UI-stable;
+  // this controls how rows are grouped vertically in the list.
+  const ALL_TAB_STATUS_ORDER = [
+    "wip",
+    "nice-to-have",
+    "known-issue",
+    "backlog",
+    "implemented",
+  ];
+  const ALL_TAB_STATUS_RANK = Object.fromEntries(
+    ALL_TAB_STATUS_ORDER.map((s, i) => [s, i])
+  );
 
   const ROOT = document.getElementById("dash-root");
   if (!ROOT) return;
@@ -19,7 +32,7 @@
   const specs = (window.SPECS || []).slice();
   const allTags = Array.from(new Set(specs.flatMap(s => s.tags || []))).sort();
 
-  // State
+  // State — activeStatus null = "All" tab
   let q = "";
   let activeTag = null;
   let activeStatus = null;
@@ -33,7 +46,6 @@
         if (k === "class") node.className = v;
         else if (k === "html") node.innerHTML = v;
         else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2), v);
-        else if (k.startsWith("data-")) node.setAttribute(k, v);
         else node.setAttribute(k, v);
       }
     }
@@ -58,22 +70,26 @@
     } catch (_) { return iso; }
   }
 
+  function statusLabel(s) {
+    return SECTIONS.find(x => x.key === s)?.title || s;
+  }
+
   // ---- Filtering ----
-  function matches(spec) {
-    if (activeStatus && spec.status !== activeStatus) return false;
+  // baseMatches: text + tag (ignores status — used for tab counts and "All" tab)
+  function baseMatches(spec) {
     if (activeTag && !(spec.tags || []).includes(activeTag)) return false;
     if (q) {
-      const hay = (
-        spec.title + " " +
-        (spec.summary || "") + " " +
-        (spec.tags || []).join(" ")
-      ).toLowerCase();
+      const hay = (spec.title + " " + (spec.summary || "") + " " + (spec.tags || []).join(" ")).toLowerCase();
       if (!hay.includes(q.toLowerCase())) return false;
     }
     return true;
   }
+  function matches(spec) {
+    if (activeStatus && spec.status !== activeStatus) return false;
+    return baseMatches(spec);
+  }
 
-  // ---- Render: filter bar ----
+  // ---- Render: filter bar (search + tag chips + clear) ----
   function renderFilters() {
     const searchInput = el("input", {
       type: "search",
@@ -81,15 +97,6 @@
       "aria-label": "Search specs",
       value: q,
       oninput: (e) => { q = e.target.value; renderAll(); },
-    });
-    const statusChips = el("div", { class: "filter-chips", "aria-label": "Filter by status" });
-    SECTIONS.forEach(s => {
-      const c = el("button", {
-        type: "button",
-        class: "chip" + (activeStatus === s.key ? " is-active" : ""),
-        onclick: () => { activeStatus = activeStatus === s.key ? null : s.key; renderAll(); },
-      }, s.title);
-      statusChips.appendChild(c);
     });
     const tagChips = el("div", { class: "filter-chips", "aria-label": "Filter by tag" });
     allTags.forEach(t => {
@@ -105,60 +112,69 @@
       class: "chip",
       onclick: () => { q = ""; activeTag = null; activeStatus = null; renderAll(); },
     }, "clear");
-    return el("div", { class: "filters" }, searchInput, statusChips, tagChips, clearBtn);
+    return el("div", { class: "filters" }, searchInput, tagChips, clearBtn);
   }
 
-  // ---- Render: recently updated rail ----
-  function renderRail() {
-    const recent = specs.slice().sort((a, b) => (b.updated || "").localeCompare(a.updated || "")).slice(0, 5);
-    const list = el("ul", { class: "rail-list" },
-      ...recent.map(s => el("li", null,
-        el("a", { href: s.href },
-          el("span", null, s.title),
-          el("span", { class: "when" }, fmtDate(s.updated))
-        )
-      ))
-    );
-    return el("section", { class: "rail" },
-      el("h2", null, "Recently updated"),
-      list
-    );
+  // ---- Render: status tabs (replaces the old stacked status sections) ----
+  function renderTabs() {
+    const tabs = el("div", { class: "status-tabs", role: "tablist" });
+    const baseFiltered = specs.filter(baseMatches);
+
+    function makeTab(key, label, count) {
+      const active = key == null ? activeStatus == null : activeStatus === key;
+      return el("button", {
+        type: "button",
+        role: "tab",
+        "aria-selected": active ? "true" : "false",
+        class: "status-tab" + (active ? " is-active" : ""),
+        onclick: () => { activeStatus = key; renderAll(); },
+      },
+        label,
+        el("span", { class: "tab-count" }, String(count))
+      );
+    }
+
+    tabs.appendChild(makeTab(null, "All", baseFiltered.length));
+    for (const s of SECTIONS) {
+      const count = baseFiltered.filter(x => x.status === s.key).length;
+      tabs.appendChild(makeTab(s.key, s.title, count));
+    }
+    return tabs;
   }
 
-  // ---- Render: card ----
-  function renderCard(spec) {
-    return el("article", { class: "card" },
-      el("div", { class: "card-top" },
-        el("span", { class: "pill", "data-status": spec.status }, statusLabel(spec.status)),
-        spec.priority ? el("span", { class: "prio", "data-prio": spec.priority, title: "Priority " + spec.priority.toUpperCase() }) : null
+  // ---- Render: list row (replaces the old card) ----
+  function renderRow(spec) {
+    return el("a", { class: "spec-row", href: spec.href },
+      el("span", { class: "pill", "data-status": spec.status }, statusLabel(spec.status)),
+      el("div", { class: "spec-row-body" },
+        el("div", { class: "spec-row-title" }, spec.title),
+        spec.summary ? el("div", { class: "spec-row-summary" }, spec.summary) : null,
       ),
-      el("h3", null, el("a", { href: spec.href }, spec.title)),
-      el("p", null, spec.summary || ""),
-      el("div", { class: "card-meta" },
-        el("div", { class: "card-tags" }, ...(spec.tags || []).map(t => el("span", { class: "tag" }, "#" + t))),
-        el("span", null, fmtDate(spec.updated))
+      el("div", { class: "spec-row-meta" },
+        spec.priority ? el("span", { class: "prio", "data-prio": spec.priority, title: "Priority " + spec.priority.toUpperCase() }) : null,
+        ...(spec.tags || []).slice(0, 3).map(t => el("span", { class: "tag" }, "#" + t)),
+        el("span", { class: "when" }, fmtDate(spec.updated)),
       )
     );
   }
 
-  function statusLabel(s) {
-    return SECTIONS.find(x => x.key === s)?.title || s;
+  function renderList() {
+    let items = specs.filter(matches);
+    if (!items.length) {
+      return el("p", { class: "empty" }, "No specs match the current filters.");
+    }
+    if (activeStatus == null) {
+      // "All" view groups by the custom status order, recent first within each group.
+      items = items.slice().sort((a, b) => {
+        const ra = ALL_TAB_STATUS_RANK[a.status] ?? 99;
+        const rb = ALL_TAB_STATUS_RANK[b.status] ?? 99;
+        if (ra !== rb) return ra - rb;
+        return (b.updated || "").localeCompare(a.updated || "");
+      });
+    }
+    return el("div", { class: "spec-list" }, ...items.map(renderRow));
   }
 
-  // ---- Render: section ----
-  function renderSection(section, items) {
-    const head = el("div", { class: "section-head" },
-      el("h2", null, section.title),
-      el("span", { class: "count" }, items.length + " " + (items.length === 1 ? "spec" : "specs")),
-      el("span", { class: "blurb" }, section.blurb),
-    );
-    const body = items.length
-      ? el("div", { class: "card-grid" }, ...items.map(renderCard))
-      : el("p", { class: "empty" }, "Nothing here yet.");
-    return el("section", { class: "section", "data-section": section.key }, head, body);
-  }
-
-  // ---- Render: total counter under header subtitle ----
   function renderCounter() {
     const node = document.getElementById("dash-counter");
     if (!node) return;
@@ -169,17 +185,11 @@
       : visible + " of " + total + " specs";
   }
 
-  // ---- Top-level render ----
   function renderAll() {
     ROOT.innerHTML = "";
     ROOT.appendChild(renderFilters());
-    ROOT.appendChild(renderRail());
-    for (const s of SECTIONS) {
-      const items = specs.filter(x => x.status === s.key).filter(matches);
-      // Skip whole section if user actively filtered to a different status
-      if (activeStatus && activeStatus !== s.key) continue;
-      ROOT.appendChild(renderSection(s, items));
-    }
+    ROOT.appendChild(renderTabs());
+    ROOT.appendChild(renderList());
     renderCounter();
   }
 

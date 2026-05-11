@@ -35,14 +35,23 @@ defined by what the renderer reads.
 The renderer:
 
 1. Reads `window.SPECS` (set by `data.js`).
-2. Builds five status sections in fixed order: WIP → Implemented → Backlog →
-   Nice to have → Known Issues. The order lives in the `SECTIONS` constant at
-   the top of `dashboard.js`.
-3. Sorts the "Recently updated" rail by `updated` descending, top 5.
-4. Filters cards based on text search, active tag chip, and active status
-   chip. All filters AND together.
-5. Updates the `#dash-counter` element under the page title with the number
+2. Renders a status tab bar with one tab per entry in the `SECTIONS` constant
+   at the top of `dashboard.js`, plus a leading "All" tab. The active tab is
+   tracked in `activeStatus` (null = All). Each tab shows a count of specs
+   that match the current text + tag filter for that status.
+3. Renders the spec list below the tabs — one row per spec matching the
+   active tab + text + tag filters. The row shows status pill, title,
+   summary (clamped to two lines), priority dots, up to three tags, and a
+   relative `updated` date. When the "All" tab is active, rows are grouped
+   by status in a fixed order (`ALL_TAB_STATUS_ORDER` near the top of
+   `dashboard.js` — currently: wip → nice-to-have → known-issue → backlog →
+   implemented), most-recently-updated first within each group. When a
+   specific status tab is active, rows render in `data.js` order.
+4. Updates the `#dash-counter` element under the page title with the number
    of visible vs. total specs.
+
+Filters AND together: search narrows the visible specs across the active
+tab; switching tabs further narrows; tag chips narrow on top of that.
 
 The renderer is the only file you'd touch to change the index layout. The
 detail pages are plain HTML — they don't go through any rendering step.

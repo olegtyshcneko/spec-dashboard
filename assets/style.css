@@ -360,7 +360,124 @@ code {
   white-space: nowrap;
 }
 
-/* ---------- Sections ---------- */
+/* ---------- Status tabs ---------- */
+.status-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+.status-tab {
+  position: relative;
+  padding: 11px 16px;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  letter-spacing: 0.005em;
+}
+.status-tab:hover { color: var(--text); }
+.status-tab.is-active {
+  color: var(--text);
+  font-weight: 700;
+}
+.status-tab.is-active::after {
+  content: "";
+  position: absolute;
+  left: 12px; right: 12px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--gold);
+}
+.status-tab .tab-count {
+  margin-left: 7px;
+  font-size: 11px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.status-tab.is-active .tab-count { color: var(--gold); font-weight: 700; }
+
+/* ---------- Spec list (Jira-style row layout) ---------- */
+.spec-list {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.spec-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  gap: 16px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  align-items: start;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 120ms ease;
+}
+.spec-row:last-child { border-bottom: none; }
+.spec-row:hover {
+  background: var(--surface-muted);
+  color: var(--text);
+  text-decoration: none;
+}
+.spec-row .pill { margin-top: 2px; }
+.spec-row-body { min-width: 0; }
+.spec-row-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.005em;
+}
+.spec-row:hover .spec-row-title { color: var(--accent); }
+.spec-row-summary {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.spec-row-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  padding-top: 3px;
+}
+.spec-row-meta .tag {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--text-faint);
+  font-size: 12px;
+  border-radius: 0;
+}
+.spec-row-meta .when { font-variant-numeric: tabular-nums; }
+@media (max-width: 720px) {
+  .spec-row { grid-template-columns: max-content minmax(0, 1fr); }
+  .spec-row-meta {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    padding-top: 0;
+    flex-wrap: wrap;
+  }
+}
+
+/* ---------- Sections (legacy — unused after tabs, kept for any forked variants) ---------- */
 .section { margin-bottom: 40px; }
 .section-head {
   display: flex;
