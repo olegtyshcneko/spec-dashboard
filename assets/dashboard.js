@@ -33,9 +33,11 @@
   const allTags = Array.from(new Set(specs.flatMap(s => s.tags || []))).sort();
 
   // State — activeStatus null = "All" tab
+  const PAGE_SIZE = 20;
   let q = "";
   let activeTag = null;
   let activeStatus = null;
+  let page = 1;
 
   // ---- DOM helpers ----
   function el(tag, attrs, ...children) {
@@ -96,21 +98,21 @@
       placeholder: "Search title, summary, or tag…",
       "aria-label": "Search specs",
       value: q,
-      oninput: (e) => { q = e.target.value; renderAll(); },
+      oninput: (e) => { q = e.target.value; page = 1; renderAll(); },
     });
     const tagChips = el("div", { class: "filter-chips", "aria-label": "Filter by tag" });
     allTags.forEach(t => {
       const c = el("button", {
         type: "button",
         class: "chip" + (activeTag === t ? " is-active" : ""),
-        onclick: () => { activeTag = activeTag === t ? null : t; renderAll(); },
+        onclick: () => { activeTag = activeTag === t ? null : t; page = 1; renderAll(); },
       }, "#" + t);
       tagChips.appendChild(c);
     });
     const clearBtn = el("button", {
       type: "button",
       class: "chip",
-      onclick: () => { q = ""; activeTag = null; activeStatus = null; renderAll(); },
+      onclick: () => { q = ""; activeTag = null; activeStatus = null; page = 1; renderAll(); },
     }, "clear");
     return el("div", { class: "filters" }, searchInput, tagChips, clearBtn);
   }
@@ -127,7 +129,7 @@
         role: "tab",
         "aria-selected": active ? "true" : "false",
         class: "status-tab" + (active ? " is-active" : ""),
-        onclick: () => { activeStatus = key; renderAll(); },
+        onclick: () => { activeStatus = key; page = 1; renderAll(); },
       },
         label,
         el("span", { class: "tab-count" }, String(count))
@@ -158,6 +160,25 @@
     );
   }
 
+  function renderPager(total, totalPages) {
+    const prev = el("button", {
+      type: "button",
+      class: "pager-btn",
+      disabled: page <= 1 ? "disabled" : false,
+      onclick: () => { if (page > 1) { page--; renderAll(); window.scrollTo({ top: 0, behavior: "smooth" }); } },
+    }, "← Prev");
+    const next = el("button", {
+      type: "button",
+      class: "pager-btn",
+      disabled: page >= totalPages ? "disabled" : false,
+      onclick: () => { if (page < totalPages) { page++; renderAll(); window.scrollTo({ top: 0, behavior: "smooth" }); } },
+    }, "Next →");
+    const info = el("span", { class: "pager-info" },
+      "Page " + page + " of " + totalPages + " · " + total + " specs"
+    );
+    return el("div", { class: "pager" }, prev, info, next);
+  }
+
   function renderList() {
     let items = specs.filter(matches);
     if (!items.length) {
@@ -172,7 +193,16 @@
         return (b.updated || "").localeCompare(a.updated || "");
       });
     }
-    return el("div", { class: "spec-list" }, ...items.map(renderRow));
+
+    const total = items.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (page > totalPages) page = totalPages;
+    const start = (page - 1) * PAGE_SIZE;
+    const pageItems = items.slice(start, start + PAGE_SIZE);
+
+    const list = el("div", { class: "spec-list" }, ...pageItems.map(renderRow));
+    if (total <= PAGE_SIZE) return list;
+    return el("div", null, list, renderPager(total, totalPages));
   }
 
   function renderCounter() {

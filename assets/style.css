@@ -477,6 +477,42 @@ code {
   }
 }
 
+/* ---------- Pager ---------- */
+.pager {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.pager-btn {
+  padding: 7px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.pager-btn:hover:not([disabled]) {
+  background: var(--surface-muted);
+  border-color: var(--gold);
+  color: var(--text);
+}
+.pager-btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pager-info {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
 /* ---------- Sections (legacy — unused after tabs, kept for any forked variants) ---------- */
 .section { margin-bottom: 40px; }
 .section-head {
