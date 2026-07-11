@@ -1,6 +1,6 @@
 {
   "name": "spec-dashboard",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Build and maintain a Git-native specification, planning, backlog, and knowledge dashboard.",
   "author": {
     "name": "Oleg Tyshchenko",
@@ -9,7 +9,13 @@
   "homepage": "https://github.com/olegtyshcneko/spec-dashboard",
   "repository": "https://github.com/olegtyshcneko/spec-dashboard",
   "license": "MIT",
-  "keywords": ["specifications", "planning", "backlog", "knowledge", "mcp"],
+  "keywords": [
+    "specifications",
+    "planning",
+    "backlog",
+    "knowledge",
+    "mcp"
+  ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "interface": {
@@ -18,7 +24,10 @@
     "longDescription": "Create validated MDX specifications, reconcile them with project evidence, review readiness, and generate a static planning and knowledge dashboard.",
     "developerName": "Oleg Tyshchenko",
     "category": "Productivity",
-    "capabilities": ["Read", "Write"],
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
     "websiteURL": "https://github.com/olegtyshcneko/spec-dashboard",
     "defaultPrompt": [
       "Bootstrap a spec dashboard for this project.",

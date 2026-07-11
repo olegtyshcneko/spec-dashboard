@@ -1,7 +1,7 @@
 import { defineCollection } from "astro:content";
 import { glob } from "astro/loaders";
 import path from "node:path";
-import { loadConfig, knowledgeFrontmatterSchema, specFrontmatterSchema } from "@spec-dashboard/core";
+import { loadConfig, knowledgeFrontmatterSchema, specFrontmatterSchema } from "../../core/dist/index.js";
 
 const projectRoot = path.resolve(process.env.SPECDASH_PROJECT_ROOT || "../..");
 const config = loadConfig(projectRoot);

@@ -78,7 +78,7 @@ Writes are restricted to Markdown and MDX files under the configured content dir
 Install the versioned repository marketplace and plugin:
 
 ```sh
-codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.4.0
+codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.4.1
 codex plugin add spec-dashboard@spec-dashboard
 ```
 

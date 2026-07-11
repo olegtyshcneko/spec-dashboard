@@ -1,22 +1,19 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import matter from "gray-matter";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod/v4";
 import { assertTransition, configPath, hasErrors, loadProject, projectSnapshot } from "@spec-dashboard/core";
 import { ChangeStore } from "./change-store.js";
 
-const require = createRequire(import.meta.url);
-
 function textResult(value: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }], structuredContent: value as Record<string, unknown> };
 }
 
 async function buildProject(root: string): Promise<{ exitCode: number; output: string }> {
-  const cliPackage = require.resolve("@spec-dashboard/cli/package.json");
-  const cli = path.join(path.dirname(cliPackage), "dist/index.js");
+  const cli = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../cli/dist/bin.mjs");
   return await new Promise((resolve) => {
     const child = spawn(process.execPath, [cli, "build", "--root", root], { cwd: root, env: process.env });
     let output = "";
@@ -30,7 +27,7 @@ export function createSpecDashboardServer(rootInput: string): McpServer {
   const root = fs.realpathSync(path.resolve(rootInput));
   let changes: ChangeStore | undefined;
   const changeStore = () => changes ??= new ChangeStore(root);
-  const server = new McpServer({ name: "spec-dashboard", version: "0.4.0" });
+  const server = new McpServer({ name: "spec-dashboard", version: "0.4.1" });
 
   const readJson = (uri: string, value: unknown) => ({ contents: [{ uri, mimeType: "application/json", text: JSON.stringify(value, null, 2) }] });
 

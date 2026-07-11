@@ -1,14 +1,24 @@
 {
   "name": "spec-dashboard",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "Git-native MDX spec and planning dashboard compiler",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "specdash": "./packages/cli/dist/index.js",
-    "specdash-mcp": "./packages/mcp/dist/index.js"
+    "specdash": "./packages/cli/dist/bin.mjs",
+    "specdash-mcp": "./packages/mcp/dist/bin.mjs"
   },
+  "files": [
+    ".agents/**",
+    "assets/**",
+    "packages/**",
+    "plugins/**",
+    "README.md",
+    "LICENSE",
+    "specdash.config.yaml",
+    "tsconfig.base.json"
+  ],
   "workspaces": [
     "packages/*"
   ],
@@ -23,5 +33,17 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^7.0.2",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "astro": "^7.0.7",
+    "fast-glob": "^3.3.3",
+    "gray-matter": "^4.0.3",
+    "yaml": "^2.8.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
   }
 }

@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { configPath, hasErrors, loadProject } from "@spec-dashboard/core";
 
 const require = createRequire(import.meta.url);
-const VERSION = "0.4.0";
+const VERSION = "0.4.1";
 
 function arg(name: string, fallback?: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -31,8 +31,7 @@ function printDiagnostics(project: ReturnType<typeof loadProject>, json: boolean
 }
 
 async function runAstro(command: "build" | "dev", root: string, outDir?: string): Promise<number> {
-  const rendererPackage = require.resolve("@spec-dashboard/renderer/package.json");
-  const rendererRoot = path.dirname(rendererPackage);
+  const rendererRoot = fileURLToPath(new URL("../../renderer/", import.meta.url));
   const astroPackage = require.resolve("astro/package.json");
   const astroBin = path.join(path.dirname(astroPackage), "bin/astro.mjs");
   const config = loadProject(root).config;

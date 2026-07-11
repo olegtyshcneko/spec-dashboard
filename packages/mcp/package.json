@@ -1,26 +1,27 @@
 {
   "name": "@spec-dashboard/mcp",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "type": "module",
   "bin": {
-    "specdash-mcp": "./dist/index.js"
+    "specdash-mcp": "./dist/bin.mjs"
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && esbuild src/index.ts --bundle --platform=node --format=esm --sourcemap --outfile=dist/bin.mjs --external:@modelcontextprotocol/sdk/* --external:fast-glob --external:gray-matter --external:yaml --external:zod",
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
-    "@spec-dashboard/cli": "0.4.0",
-    "@spec-dashboard/core": "0.4.0",
+    "@spec-dashboard/cli": "0.4.1",
+    "@spec-dashboard/core": "0.4.1",
     "gray-matter": "^4.0.3",
     "yaml": "^2.8.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
+    "esbuild": "^0.28.1",
     "typescript": "^5.9.3"
   }
 }

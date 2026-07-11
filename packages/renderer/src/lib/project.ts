@@ -1,5 +1,5 @@
 import path from "node:path";
-import { loadProject, projectSnapshot } from "@spec-dashboard/core";
+import { loadProject, projectSnapshot } from "../../../core/dist/index.js";
 
 export const projectRoot = path.resolve(process.env.SPECDASH_PROJECT_ROOT || "../..");
 export const projectModel = loadProject(projectRoot);
