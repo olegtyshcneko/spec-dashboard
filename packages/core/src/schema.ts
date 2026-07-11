@@ -56,6 +56,7 @@ export const specFrontmatterSchema = z.object({
   priority: prioritySchema,
   owners: z.array(z.string().min(1)).default([]),
   nextAction: z.string().min(3).optional(),
+  blockers: z.array(z.string().min(3)).default([]),
   dependsOn: z.array(z.string().regex(/^SPEC-\d{3,}$/)).default([]),
 });
 
@@ -84,6 +85,9 @@ export const dashboardConfigSchema = z.object({
   outputDir: z.string().default("dist"),
   base: z.string().default("/"),
   categories: z.array(categorySchema).default([]),
+  quality: z.object({
+    staleAfterDays: z.number().int().positive().default(90),
+  }).default({ staleAfterDays: 90 }),
 });
 
 export type SpecFrontmatter = z.infer<typeof specFrontmatterSchema>;

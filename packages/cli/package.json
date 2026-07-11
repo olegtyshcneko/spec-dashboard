@@ -1,6 +1,6 @@
 {
   "name": "@spec-dashboard/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "bin": {
@@ -10,8 +10,8 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@spec-dashboard/core": "0.1.0",
-    "@spec-dashboard/renderer": "0.1.0",
+    "@spec-dashboard/core": "0.2.0",
+    "@spec-dashboard/renderer": "0.2.0",
     "astro": "^7.0.7"
   },
   "devDependencies": {

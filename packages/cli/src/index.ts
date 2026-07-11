@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { configPath, hasErrors, loadProject } from "@spec-dashboard/core";
 
 const require = createRequire(import.meta.url);
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 
 function arg(name: string, fallback?: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -52,7 +52,7 @@ function initialize(root: string): void {
   if (fs.existsSync(configPath(root))) throw new Error(`Project already initialized at ${root}`);
   fs.mkdirSync(path.join(root, "content/specs"), { recursive: true });
   fs.mkdirSync(path.join(root, "content/knowledge"), { recursive: true });
-  fs.writeFileSync(configPath(root), `schemaVersion: 1\nproject:\n  name: ${path.basename(root)}\n  tagline: Specifications and project knowledge\ncontentDir: content\noutputDir: dist\nbase: /\ncategories:\n  - id: general\n    label: General\n`);
+  fs.writeFileSync(configPath(root), `schemaVersion: 1\nproject:\n  name: ${path.basename(root)}\n  tagline: Specifications and project knowledge\ncontentDir: content\noutputDir: dist\nbase: /\nquality:\n  staleAfterDays: 90\ncategories:\n  - id: general\n    label: General\n`);
   process.stdout.write(`Initialized spec dashboard at ${root}\n`);
 }
 

@@ -73,3 +73,55 @@ Body.
   const project = loadProject(root);
   assert.equal(project.diagnostics[0]?.code, "broken-reference");
 });
+
+test("derives task progress, graph edges, and readiness diagnostics", () => {
+  const root = fixture();
+  fs.writeFileSync(path.join(root, "content/specs/foundation.mdx"), `---
+schemaVersion: 1
+id: SPEC-001
+title: Foundation feature
+summary: A sufficiently useful foundation summary.
+kind: feature
+state: shipped
+priority: p0
+categories: [platform]
+tags: []
+owners: [maintainer]
+dependsOn: []
+related: []
+sourceRefs:
+  - type: file
+    value: src/index.ts
+created: 2026-07-01
+updated: 2026-07-01
+---
+## Acceptance criteria
+- [x] Foundation exists.
+`);
+  fs.writeFileSync(path.join(root, "content/specs/active.mdx"), `---
+schemaVersion: 1
+id: SPEC-002
+title: Active feature
+summary: A sufficiently useful active feature summary.
+kind: feature
+state: active
+priority: p1
+categories: [platform]
+tags: []
+owners: []
+nextAction: Complete the open task.
+dependsOn: [SPEC-001]
+related: []
+sourceRefs: []
+created: 2026-07-01
+updated: 2026-07-01
+---
+## Acceptance criteria
+- [x] First task.
+- [ ] Second task.
+`);
+  const project = loadProject(root, { now: new Date("2026-07-11T00:00:00Z") });
+  assert.deepEqual(project.edges, [{ from: "SPEC-002", to: "SPEC-001", type: "depends-on" }]);
+  assert.equal(project.specs.find((entry) => entry.id === "SPEC-002").analysis.tasks.done, 1);
+  assert.ok(project.diagnostics.some((diagnostic) => diagnostic.code === "missing-owner"));
+});

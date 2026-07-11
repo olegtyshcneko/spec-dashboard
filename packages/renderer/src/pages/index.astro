@@ -1,73 +1,181 @@
 ---
-import { getCollection } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { snapshot } from "../lib/project";
 
-const specs = (await getCollection("specs")).sort((a, b) => {
-  const stateOrder = ["active", "blocked", "review", "ready", "backlog", "idea", "shipped", "archived"];
-  const rank = stateOrder.indexOf(a.data.state) - stateOrder.indexOf(b.data.state);
-  return rank || b.data.updated.localeCompare(a.data.updated);
-});
-const clientSpecs = specs.map((entry) => ({ ...entry.data, href: `/specs/${entry.data.id}/` }));
-const states = [...new Set(specs.map((entry) => entry.data.state))];
+const specs = snapshot.specs;
+const knowledge = snapshot.knowledge;
+const counts = Object.fromEntries(["active", "blocked", "ready", "backlog", "review", "shipped"].map((state) => [state, specs.filter((spec) => spec.state === state).length]));
+const healthCount = snapshot.diagnostics.filter((diagnostic) => diagnostic.severity !== "error").length;
+const featuredKnowledge = knowledge.filter((entry) => entry.featured).slice(0, 3);
+const serialized = JSON.stringify(snapshot).replace(/</g, "\\u003c");
 ---
 <BaseLayout>
   <main>
-    <div class="filters">
-      <input id="spec-search" type="search" placeholder="Search title, summary, category, or tag…" aria-label="Search specs" />
-      <div class="filter-chips" aria-label="Filter by state">
-        <button class="chip is-active" type="button" data-state="">All</button>
-        {states.map((state) => <button class="chip" type="button" data-state={state}>{state}</button>)}
+    <section class="overview-grid" aria-label="Project overview">
+      {[
+        ["Active", counts.active, "active"],
+        ["Blocked", counts.blocked, "blocked"],
+        ["Ready", counts.ready, "ready"],
+        ["Backlog", counts.backlog, "backlog"],
+        ["Review", counts.review, "review"],
+        ["Shipped", counts.shipped, "shipped"],
+      ].map(([label, value, state]) => (
+        <button type="button" class="overview-card" data-overview-state={state}>
+          <span class="overview-value">{value}</span><span class="overview-label">{label}</span>
+        </button>
+      ))}
+      <a class="overview-card" href="/health/"><span class="overview-value">{healthCount}</span><span class="overview-label">Health notes</span></a>
+    </section>
+
+    {featuredKnowledge.length > 0 && (
+      <section class="kb-hero compact-kb">
+        <div class="kb-hero-head">
+          <div><p class="kb-hero-eyebrow">Knowledge base</p><h2>Project context <em>connected to work</em></h2></div>
+          <p class="kb-hero-lede">Architecture, research, decisions, and runbooks are indexed with generated backlinks.</p>
+        </div>
+        <div class="kb-hero-grid">
+          {featuredKnowledge.map((entry) => (
+            <a class="kb-entry-card" href={entry.href}>
+              <span class="kb-entry-title"><span>{entry.id} · {entry.title}</span><span class="arrow">→</span></span>
+              <p class="kb-entry-summary">{entry.summary}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <section aria-labelledby="work-title">
+      <div class="section-title-row"><h2 id="work-title">Work items</h2><p id="spec-count" class="subtitle"></p></div>
+      <div class="filters intelligence-filters">
+        <input id="spec-search" type="search" placeholder="Search title, summary, category, owner, or tag…" aria-label="Search specs" />
+        <select id="kind-filter" aria-label="Filter by kind"><option value="">All kinds</option></select>
+        <select id="priority-filter" aria-label="Filter by priority"><option value="">All priorities</option></select>
+        <select id="category-filter" aria-label="Filter by category"><option value="">All categories</option></select>
+        <select id="owner-filter" aria-label="Filter by owner"><option value="">All owners</option></select>
+        <button id="clear-filters" class="chip" type="button">Clear</button>
       </div>
-    </div>
-    <p id="spec-count" class="subtitle"></p>
-    <div id="spec-list" class="spec-list"></div>
+      <div class="status-tabs" role="tablist" id="state-tabs"></div>
+      <div id="spec-list" class="spec-list"></div>
+    </section>
   </main>
-  <script define:vars={{ specs: clientSpecs }}>
+  <script type="application/json" id="project-data" set:html={serialized}></script>
+  <script>
+    const project = JSON.parse(document.querySelector("#project-data").textContent);
+    const specs = project.specs;
     const list = document.querySelector("#spec-list");
     const count = document.querySelector("#spec-count");
     const search = document.querySelector("#spec-search");
-    const chips = [...document.querySelectorAll("[data-state]")];
-    let activeState = "";
+    const stateTabs = document.querySelector("#state-tabs");
+    const selects = {
+      kind: document.querySelector("#kind-filter"),
+      priority: document.querySelector("#priority-filter"),
+      category: document.querySelector("#category-filter"),
+      owner: document.querySelector("#owner-filter"),
+    };
+    const states = ["active", "blocked", "review", "ready", "backlog", "idea", "shipped", "archived"];
+    const params = new URLSearchParams(location.search);
+    let activeState = params.get("state") || "";
 
+    function values(field) {
+      return [...new Set(specs.flatMap((spec) => Array.isArray(spec[field]) ? spec[field] : [spec[field]]).filter(Boolean))].sort();
+    }
+    function fill(select, field) {
+      for (const value of values(field)) select.add(new Option(value, value));
+      select.value = params.get(field) || "";
+    }
+    fill(selects.kind, "kind");
+    fill(selects.priority, "priority");
+    fill(selects.category, "categories");
+    fill(selects.owner, "owners");
+    search.value = params.get("q") || "";
+
+    function stateButton(state, label) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.role = "tab";
+      button.className = `status-tab${activeState === state ? " is-active" : ""}`;
+      button.dataset.state = state;
+      button.textContent = `${label} ${state ? specs.filter((spec) => spec.state === state).length : specs.length}`;
+      button.addEventListener("click", () => { activeState = state; renderTabs(); render(); });
+      return button;
+    }
+    function renderTabs() {
+      stateTabs.replaceChildren(stateButton("", "All"), ...states.map((state) => stateButton(state, state)));
+    }
+    function selected(spec, field, value) {
+      if (!value) return true;
+      const candidate = spec[field];
+      return Array.isArray(candidate) ? candidate.includes(value) : candidate === value;
+    }
+    function updateUrl() {
+      const next = new URLSearchParams();
+      if (search.value.trim()) next.set("q", search.value.trim());
+      if (activeState) next.set("state", activeState);
+      for (const [field, select] of Object.entries(selects)) if (select.value) next.set(field, select.value);
+      history.replaceState(null, "", `${location.pathname}${next.size ? `?${next}` : ""}`);
+    }
+    function rowFor(spec) {
+      const row = document.createElement("a");
+      row.className = `spec-row${spec.state === "blocked" ? " is-blocked" : ""}`;
+      row.href = spec.href;
+      const pill = document.createElement("span");
+      pill.className = "pill";
+      pill.dataset.status = spec.state;
+      pill.textContent = spec.state;
+      const body = document.createElement("div");
+      body.className = "spec-row-body";
+      const title = document.createElement("div");
+      title.className = "spec-row-title";
+      title.textContent = `${spec.id} · ${spec.title}`;
+      const summary = document.createElement("div");
+      summary.className = "spec-row-summary";
+      summary.textContent = spec.summary;
+      body.append(title, summary);
+      if (spec.nextAction) {
+        const action = document.createElement("div");
+        action.className = "next-action";
+        action.textContent = `Next: ${spec.nextAction}`;
+        body.append(action);
+      }
+      const meta = document.createElement("div");
+      meta.className = "spec-row-meta rich-meta";
+      const progress = spec.analysis.tasks.total ? `${spec.analysis.tasks.done}/${spec.analysis.tasks.total} tasks` : "no tasks";
+      meta.textContent = `${spec.kind} · ${spec.priority} · ${spec.categories.join(", ")} · ${progress} · ${spec.updated}`;
+      row.append(pill, body, meta);
+      return row;
+    }
     function render() {
       const query = search.value.trim().toLowerCase();
       const visible = specs.filter((spec) => {
         if (activeState && spec.state !== activeState) return false;
-        const haystack = [spec.title, spec.summary, ...(spec.categories || []), ...(spec.tags || [])].join(" ").toLowerCase();
+        if (!selected(spec, "kind", selects.kind.value)) return false;
+        if (!selected(spec, "priority", selects.priority.value)) return false;
+        if (!selected(spec, "categories", selects.category.value)) return false;
+        if (!selected(spec, "owners", selects.owner.value)) return false;
+        const haystack = [spec.id, spec.title, spec.summary, spec.nextAction || "", ...(spec.categories || []), ...(spec.tags || []), ...(spec.owners || [])].join(" ").toLowerCase();
         return !query || haystack.includes(query);
       });
       count.textContent = `${visible.length} of ${specs.length} specs`;
-      list.replaceChildren(...visible.map((spec) => {
-        const row = document.createElement("a");
-        row.className = "spec-row";
-        row.href = spec.href;
-        const pill = document.createElement("span");
-        pill.className = "pill";
-        pill.dataset.status = spec.state;
-        pill.textContent = spec.state;
-        const body = document.createElement("div");
-        body.className = "spec-row-body";
-        const title = document.createElement("div");
-        title.className = "spec-row-title";
-        title.textContent = `${spec.id} · ${spec.title}`;
-        const summary = document.createElement("div");
-        summary.className = "spec-row-summary";
-        summary.textContent = spec.summary;
-        body.append(title, summary);
-        const meta = document.createElement("div");
-        meta.className = "spec-row-meta";
-        meta.textContent = `${spec.priority} · ${spec.categories.join(", ")} · ${spec.updated}`;
-        row.append(pill, body, meta);
-        return row;
-      }));
+      list.replaceChildren(...visible.map(rowFor));
+      if (!visible.length) list.textContent = "No work items match these filters.";
+      updateUrl();
     }
-
     search.addEventListener("input", render);
-    chips.forEach((chip) => chip.addEventListener("click", () => {
-      activeState = chip.dataset.state || "";
-      chips.forEach((candidate) => candidate.classList.toggle("is-active", candidate === chip));
+    Object.values(selects).forEach((select) => select.addEventListener("change", render));
+    document.querySelector("#clear-filters").addEventListener("click", () => {
+      search.value = "";
+      activeState = "";
+      Object.values(selects).forEach((select) => { select.value = ""; });
+      renderTabs();
       render();
+    });
+    document.querySelectorAll("[data-overview-state]").forEach((card) => card.addEventListener("click", () => {
+      activeState = card.dataset.overviewState;
+      renderTabs();
+      render();
+      document.querySelector("#work-title").scrollIntoView({ behavior: "smooth" });
     }));
+    renderTabs();
     render();
   </script>
 </BaseLayout>

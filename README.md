@@ -42,6 +42,19 @@ node packages/cli/dist/index.js dev --root /path/to/project
 
 Use `--json` with `validate` for machine-readable diagnostics and `--out-dir` with `build` to override the configured output directory.
 
+## Dashboard intelligence
+
+The generated site includes:
+
+- overview counts for active, blocked, ready, backlog, review, and shipped work;
+- URL-backed filtering by text, state, kind, priority, category, and owner;
+- task progress derived from Markdown checklists;
+- dependency, related-entry, and backlink views;
+- a health page for schema and readiness diagnostics;
+- a knowledge index connected to the work it informs.
+
+Quality gates are state-aware. Active work needs an owner, next action, and acceptance criteria; blocked work must name its blockers; shipped work must retain source evidence. `quality.staleAfterDays` controls freshness warnings.
+
 ## Content model
 
 Specification frontmatter separates lifecycle from kind and priority:
@@ -58,6 +71,7 @@ categories: [platform]
 tags: [static-site]
 owners: [oleg]
 nextAction: Add build validation
+blockers: []
 dependsOn: [SPEC-009]
 related: [KB-003]
 sourceRefs:

@@ -4,15 +4,16 @@ id: SPEC-003
 title: Backlog and active-work intelligence
 summary: Surface active, blocked, ready, backlog, and shipped work with categories, health diagnostics, and relationship context.
 kind: feature
-state: active
+state: shipped
 priority: p0
 categories: [experience]
 tags: [dashboard, planning]
-owners: []
-nextAction: Add overview metrics, readiness diagnostics, relationship backlinks, and URL-backed filters.
+owners: [maintainer]
 dependsOn: [SPEC-002]
 related: []
-sourceRefs: []
+sourceRefs:
+  - type: file
+    value: packages/renderer/src/pages/index.astro
 created: 2026-07-11
 updated: 2026-07-11
 featured: true
@@ -24,7 +25,7 @@ Turn a searchable document list into an operational planning surface without int
 
 ## Acceptance criteria
 
-- [ ] Show state counts and highlight blocked work.
-- [ ] Filter by state, kind, priority, category, owner, and text.
-- [ ] Generate backlinks and dependency context.
-- [ ] Report readiness and stale-document diagnostics.
+- [x] Show state counts and highlight blocked work.
+- [x] Filter by state, kind, priority, category, owner, and text.
+- [x] Generate backlinks and dependency context.
+- [x] Report readiness and stale-document diagnostics.

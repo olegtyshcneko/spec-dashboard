@@ -1,0 +1,26 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { snapshot } from "../../lib/project";
+const grouped = Object.groupBy(snapshot.diagnostics, (diagnostic) => diagnostic.severity);
+---
+<BaseLayout title="Dashboard health">
+  <main>
+    <h1>Dashboard health</h1>
+    <p class="summary">Schema failures block builds. Quality warnings identify documentation that is valid but not yet operationally complete.</p>
+    <div class="health-summary">
+      <span><strong>{grouped.error?.length ?? 0}</strong> errors</span>
+      <span><strong>{grouped.warning?.length ?? 0}</strong> warnings</span>
+    </div>
+    {snapshot.diagnostics.length === 0 ? <p class="empty">No diagnostics.</p> : (
+      <div class="diagnostic-list">
+        {snapshot.diagnostics.map((diagnostic) => (
+          <article class={`diagnostic diagnostic-${diagnostic.severity}`}>
+            <strong>{diagnostic.code}</strong>
+            <p>{diagnostic.message}</p>
+            {diagnostic.file && <code>{diagnostic.file}</code>}
+          </article>
+        ))}
+      </div>
+    )}
+  </main>
+</BaseLayout>

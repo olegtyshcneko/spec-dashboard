@@ -1,0 +1,20 @@
+---
+import { projectModel } from "../lib/project";
+
+interface Props { id: string }
+const { id } = Astro.props;
+const entries = [...projectModel.specs, ...projectModel.knowledge];
+const byId = new Map(entries.map((entry) => [entry.id, entry]));
+const outgoing = projectModel.edges.filter((edge) => edge.from === id);
+const incoming = projectModel.edges.filter((edge) => edge.to === id);
+const href = (target: string) => target.startsWith("SPEC-") ? `/specs/${target}/` : `/knowledge/${target}/`;
+---
+{(outgoing.length > 0 || incoming.length > 0) && (
+  <section class="relationships">
+    <h2>Relationships</h2>
+    <ul class="files-list">
+      {outgoing.map((edge) => <li><span class="relation-label">{edge.type}</span> <a href={href(edge.to)}>{edge.to} · {byId.get(edge.to)?.data.title}</a></li>)}
+      {incoming.map((edge) => <li><span class="relation-label">required by</span> <a href={href(edge.from)}>{edge.from} · {byId.get(edge.from)?.data.title}</a></li>)}
+    </ul>
+  </section>
+)}

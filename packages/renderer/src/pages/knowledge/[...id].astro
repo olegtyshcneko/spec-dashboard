@@ -1,6 +1,7 @@
 ---
 import { getCollection, render } from "astro:content";
 import EntryMeta from "../../components/EntryMeta.astro";
+import Relationships from "../../components/Relationships.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 export async function getStaticPaths() {
@@ -19,5 +20,6 @@ const { Content } = await render(entry);
       <EntryMeta data={entry.data} />
     </header>
     <div class="entry-body"><Content /></div>
+    <Relationships id={entry.data.id} />
   </article>
 </BaseLayout>

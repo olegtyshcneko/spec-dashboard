@@ -19,6 +19,19 @@ export interface ContentEntry<T> {
   relativePath: string;
   body: string;
   data: T;
+  analysis: BodyAnalysis;
+}
+
+export interface BodyAnalysis {
+  headings: string[];
+  tasks: { total: number; done: number; open: number };
+  wordCount: number;
+}
+
+export interface GraphEdge {
+  from: string;
+  to: string;
+  type: "depends-on" | "related";
 }
 
 export interface Diagnostic {
@@ -34,6 +47,8 @@ export interface ProjectModel {
   specs: ContentEntry<SpecFrontmatter>[];
   knowledge: ContentEntry<KnowledgeFrontmatter>[];
   diagnostics: Diagnostic[];
+  edges: GraphEdge[];
+  backlinks: Record<string, GraphEdge[]>;
 }
 
 export function configPath(root: string): string {
@@ -47,6 +62,14 @@ export function loadConfig(root: string): DashboardConfig {
 
 function slugFrom(relativePath: string): string {
   return relativePath.replace(/\\/g, "/").replace(/\.(md|mdx)$/i, "");
+}
+
+export function analyzeBody(body: string): BodyAnalysis {
+  const tasks = [...body.matchAll(/^\s*-\s+\[([ xX])\]\s+/gm)];
+  const done = tasks.filter((task) => task[1]?.toLowerCase() === "x").length;
+  const headings = [...body.matchAll(/^#{2,6}\s+(.+)$/gm)].map((match) => match[1]!.trim());
+  const words = body.replace(/[`*_#[\](){}<>|~-]/g, " ").trim().split(/\s+/).filter(Boolean);
+  return { headings, tasks: { total: tasks.length, done, open: tasks.length - done }, wordCount: words.length };
 }
 
 function loadEntries<T>(
@@ -83,11 +106,12 @@ function loadEntries<T>(
       relativePath: displayPath,
       body: parsed.content.trim(),
       data: result.data,
+      analysis: analyzeBody(parsed.content),
     }];
   });
 }
 
-export function loadProject(rootInput: string): ProjectModel {
+export function loadProject(rootInput: string, options: { now?: Date } = {}): ProjectModel {
   const root = path.resolve(rootInput);
   const config = loadConfig(root);
   const diagnostics: Diagnostic[] = [];
@@ -96,6 +120,7 @@ export function loadProject(rootInput: string): ProjectModel {
   const entries = [...specs, ...knowledge];
   const byId = new Map<string, ContentEntry<SpecFrontmatter | KnowledgeFrontmatter>>();
   const categoryIds = new Set(config.categories.map((category) => category.id));
+  const now = options.now ?? new Date();
 
   for (const entry of entries) {
     const duplicate = byId.get(entry.id);
@@ -144,15 +169,77 @@ export function loadProject(rootInput: string): ProjectModel {
         });
       }
     }
+
+    const updatedAt = new Date(`${entry.data.updated}T00:00:00Z`);
+    const ageDays = Math.floor((now.getTime() - updatedAt.getTime()) / 86_400_000);
+    if (ageDays > config.quality.staleAfterDays && !("state" in entry.data && entry.data.state === "archived")) {
+      diagnostics.push({
+        severity: "warning",
+        code: "stale-entry",
+        file: entry.relativePath,
+        message: `${entry.id} has not been meaningfully updated for ${ageDays} days`,
+      });
+    }
+
+    if ("state" in entry.data) {
+      const spec = entry.data;
+      if (["active", "blocked", "review"].includes(spec.state) && spec.owners.length === 0) {
+        diagnostics.push({ severity: "warning", code: "missing-owner", file: entry.relativePath, message: `${entry.id} is ${spec.state} but has no owner` });
+      }
+      if (["active", "blocked"].includes(spec.state) && !spec.nextAction) {
+        diagnostics.push({ severity: "warning", code: "missing-next-action", file: entry.relativePath, message: `${entry.id} is ${spec.state} but has no next action` });
+      }
+      if (spec.state === "blocked" && spec.blockers.length === 0) {
+        diagnostics.push({ severity: "warning", code: "missing-blocker", file: entry.relativePath, message: `${entry.id} is blocked but does not name a blocker` });
+      }
+      if (["ready", "active", "blocked", "review", "shipped"].includes(spec.state) && !entry.analysis.headings.some((heading) => /acceptance criteria/i.test(heading))) {
+        diagnostics.push({ severity: "warning", code: "missing-acceptance-criteria", file: entry.relativePath, message: `${entry.id} is ${spec.state} but has no Acceptance criteria section` });
+      }
+      if (spec.state === "shipped" && spec.sourceRefs.length === 0) {
+        diagnostics.push({ severity: "warning", code: "missing-shipping-evidence", file: entry.relativePath, message: `${entry.id} is shipped but has no source evidence` });
+      }
+    }
   }
 
   if (specs.length === 0) {
     diagnostics.push({ severity: "warning", code: "no-specs", message: "No specification entries were found" });
   }
 
-  return { root, config, specs, knowledge, diagnostics };
+  const edges: GraphEdge[] = [];
+  for (const entry of entries) {
+    for (const target of entry.data.related) edges.push({ from: entry.id, to: target, type: "related" });
+    if ("dependsOn" in entry.data) {
+      for (const target of entry.data.dependsOn) edges.push({ from: entry.id, to: target, type: "depends-on" });
+    }
+  }
+  const backlinks = Object.fromEntries(entries.map((entry) => [entry.id, [] as GraphEdge[]]));
+  for (const edge of edges) backlinks[edge.to]?.push(edge);
+
+  return { root, config, specs, knowledge, diagnostics, edges, backlinks };
 }
 
 export function hasErrors(project: ProjectModel): boolean {
   return project.diagnostics.some((diagnostic) => diagnostic.severity === "error");
+}
+
+export function projectSnapshot(project: ProjectModel) {
+  return {
+    schemaVersion: 1,
+    project: project.config.project,
+    categories: project.config.categories,
+    specs: project.specs.map((entry) => ({
+      ...entry.data,
+      analysis: entry.analysis,
+      href: `/specs/${entry.id}/`,
+      backlinks: project.backlinks[entry.id] ?? [],
+    })),
+    knowledge: project.knowledge.map((entry) => ({
+      ...entry.data,
+      analysis: entry.analysis,
+      href: `/knowledge/${entry.id}/`,
+      backlinks: project.backlinks[entry.id] ?? [],
+    })),
+    edges: project.edges,
+    diagnostics: project.diagnostics,
+  };
 }

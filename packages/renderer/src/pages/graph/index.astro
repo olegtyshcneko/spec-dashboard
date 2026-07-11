@@ -1,0 +1,22 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { projectModel } from "../../lib/project";
+const entries = [...projectModel.specs, ...projectModel.knowledge];
+const byId = new Map(entries.map((entry) => [entry.id, entry]));
+const href = (id: string) => id.startsWith("SPEC-") ? `/specs/${id}/` : `/knowledge/${id}/`;
+---
+<BaseLayout title="Relationship graph">
+  <main>
+    <h1>Relationship graph</h1>
+    <p class="summary">Generated dependencies, related knowledge, and backlinks across the project.</p>
+    <div class="graph-list">
+      {projectModel.edges.map((edge) => (
+        <article class="graph-edge">
+          <a href={href(edge.from)}>{edge.from} · {byId.get(edge.from)?.data.title}</a>
+          <span class="relation-label">{edge.type}</span>
+          <a href={href(edge.to)}>{edge.to} · {byId.get(edge.to)?.data.title}</a>
+        </article>
+      ))}
+    </div>
+  </main>
+</BaseLayout>

@@ -5,6 +5,8 @@ project:
 contentDir: content
 outputDir: dist
 base: /
+quality:
+  staleAfterDays: 90
 categories:
   - id: platform
     label: Platform
