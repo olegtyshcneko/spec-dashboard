@@ -1,0 +1,36 @@
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          package-manager-cache: false
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test
+      - name: Validate dashboard content
+        run: npm run validate
+      - name: Reconcile Git evidence
+        env:
+          RECONCILE_BASE: ${{ github.event.pull_request.base.sha || 'HEAD~1' }}
+        run: npm run reconcile -- --since "$RECONCILE_BASE" --json
+      - name: Build static dashboard
+        run: npm run build

@@ -88,6 +88,9 @@ export const dashboardConfigSchema = z.object({
   quality: z.object({
     staleAfterDays: z.number().int().positive().default(90),
   }).default({ staleAfterDays: 90 }),
+  reconciliation: z.object({
+    baseRef: z.string().min(1).default("HEAD~1"),
+  }).default({ baseRef: "HEAD~1" }),
 });
 
 export type SpecFrontmatter = z.infer<typeof specFrontmatterSchema>;

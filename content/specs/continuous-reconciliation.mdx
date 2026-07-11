@@ -4,15 +4,20 @@ id: SPEC-006
 title: Continuous Git reconciliation
 summary: Compare dashboard content with repository evidence and produce reviewable drift and lifecycle suggestions in local and CI workflows.
 kind: feature
-state: active
+state: shipped
 priority: p1
 categories: [platform]
 tags: [git, ci, reconciliation]
 owners: [maintainer]
-nextAction: Add Git evidence scanning, drift suggestions, CI validation, and Pages publishing.
 dependsOn: [SPEC-004]
 related: []
 sourceRefs:
+  - type: file
+    value: packages/core/src/reconcile.ts
+  - type: file
+    value: .github/workflows/validate.yml
+  - type: file
+    value: .github/workflows/pages.yml
   - type: file
     value: plugins/spec-dashboard/skills/reconcile-spec-dashboard/SKILL.md
 created: 2026-07-11
@@ -22,7 +27,7 @@ featured: false
 
 ## Acceptance criteria
 
-- [ ] Detect changed related files and stale documentation.
-- [ ] Suggest lifecycle transitions with evidence instead of applying them silently.
-- [ ] Validate and build on pull requests.
-- [ ] Publish the static dashboard through GitHub Pages.
+- [x] Detect changed related files and stale documentation.
+- [x] Suggest lifecycle transitions with evidence instead of applying them silently.
+- [x] Validate and build on pull requests.
+- [x] Publish the static dashboard through GitHub Pages.

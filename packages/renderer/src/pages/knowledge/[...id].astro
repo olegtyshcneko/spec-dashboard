@@ -3,6 +3,7 @@ import { getCollection, render } from "astro:content";
 import EntryMeta from "../../components/EntryMeta.astro";
 import Relationships from "../../components/Relationships.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { withBase } from "../../lib/project";
 
 export async function getStaticPaths() {
   return (await getCollection("knowledge")).map((entry) => ({ params: { id: entry.data.id }, props: { entry } }));
@@ -13,7 +14,7 @@ const { Content } = await render(entry);
 ---
 <BaseLayout title={entry.data.title}>
   <article class="detail">
-    <div class="crumb"><a href="/knowledge/">← Knowledge base</a></div>
+    <div class="crumb"><a href={withBase("knowledge/")}>← Knowledge base</a></div>
     <header>
       <h1>{entry.data.title}</h1>
       <p class="summary">{entry.data.summary}</p>

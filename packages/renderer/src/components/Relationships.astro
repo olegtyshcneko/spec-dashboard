@@ -1,5 +1,5 @@
 ---
-import { projectModel } from "../lib/project";
+import { hrefFor, projectModel } from "../lib/project";
 
 interface Props { id: string }
 const { id } = Astro.props;
@@ -7,7 +7,7 @@ const entries = [...projectModel.specs, ...projectModel.knowledge];
 const byId = new Map(entries.map((entry) => [entry.id, entry]));
 const outgoing = projectModel.edges.filter((edge) => edge.from === id);
 const incoming = projectModel.edges.filter((edge) => edge.to === id);
-const href = (target: string) => target.startsWith("SPEC-") ? `/specs/${target}/` : `/knowledge/${target}/`;
+const href = (target: string) => hrefFor(target.startsWith("SPEC-") ? "specs" : "knowledge", target);
 ---
 {(outgoing.length > 0 || incoming.length > 0) && (
   <section class="relationships">

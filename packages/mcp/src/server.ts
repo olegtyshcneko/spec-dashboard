@@ -5,17 +5,19 @@ import { fileURLToPath } from "node:url";
 import matter from "gray-matter";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod/v4";
-import { assertTransition, configPath, hasErrors, loadProject, projectSnapshot } from "@spec-dashboard/core";
+import { assertTransition, configPath, hasErrors, loadProject, projectSnapshot, reconcileProject } from "@spec-dashboard/core";
 import { ChangeStore } from "./change-store.js";
 
 function textResult(value: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }], structuredContent: value as Record<string, unknown> };
 }
 
-async function buildProject(root: string): Promise<{ exitCode: number; output: string }> {
+async function buildProject(root: string, base?: string): Promise<{ exitCode: number; output: string }> {
   const cli = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../cli/dist/bin.mjs");
   return await new Promise((resolve) => {
-    const child = spawn(process.execPath, [cli, "build", "--root", root], { cwd: root, env: process.env });
+    const args = [cli, "build", "--root", root];
+    if (base) args.push("--base", base);
+    const child = spawn(process.execPath, args, { cwd: root, env: process.env });
     let output = "";
     child.stdout.on("data", (chunk) => { output += String(chunk); });
     child.stderr.on("data", (chunk) => { output += String(chunk); });
@@ -27,7 +29,7 @@ export function createSpecDashboardServer(rootInput: string): McpServer {
   const root = fs.realpathSync(path.resolve(rootInput));
   let changes: ChangeStore | undefined;
   const changeStore = () => changes ??= new ChangeStore(root);
-  const server = new McpServer({ name: "spec-dashboard", version: "0.4.1" });
+  const server = new McpServer({ name: "spec-dashboard", version: "0.5.0" });
 
   const readJson = (uri: string, value: unknown) => ({ contents: [{ uri, mimeType: "application/json", text: JSON.stringify(value, null, 2) }] });
 
@@ -44,7 +46,7 @@ export function createSpecDashboardServer(rootInput: string): McpServer {
   }, async ({ projectName, categories, apply }) => {
     const target = configPath(root);
     if (fs.existsSync(target)) throw new Error(`Project is already initialized at ${target}`);
-    const preview = `schemaVersion: 1\nproject:\n  name: ${JSON.stringify(projectName)}\n  tagline: Specifications and project knowledge\ncontentDir: content\noutputDir: dist\nbase: /\nquality:\n  staleAfterDays: 90\ncategories:\n${categories.map((category) => `  - id: ${category.id}\n    label: ${JSON.stringify(category.label)}`).join("\n")}\n`;
+    const preview = `schemaVersion: 1\nproject:\n  name: ${JSON.stringify(projectName)}\n  tagline: Specifications and project knowledge\ncontentDir: content\noutputDir: dist\nbase: /\nquality:\n  staleAfterDays: 90\nreconciliation:\n  baseRef: HEAD~1\ncategories:\n${categories.map((category) => `  - id: ${category.id}\n    label: ${JSON.stringify(category.label)}`).join("\n")}\n`;
     if (apply) {
       fs.mkdirSync(path.join(root, "content/specs"), { recursive: true });
       fs.mkdirSync(path.join(root, "content/knowledge"), { recursive: true });
@@ -160,6 +162,26 @@ export function createSpecDashboardServer(rootInput: string): McpServer {
     });
   });
 
+  server.registerTool("specdash.reconcile", {
+    title: "Reconcile specs with Git evidence",
+    description: "Report changed source references, stale documentation, and reviewable lifecycle candidates without changing files",
+    inputSchema: { since: z.string().min(1).optional() },
+    outputSchema: {
+      repository: z.object({ branch: z.string(), head: z.string(), since: z.string() }),
+      changedFiles: z.array(z.string()),
+      suggestions: z.array(z.object({
+        id: z.string(),
+        itemId: z.string(),
+        kind: z.enum(["source-changed", "source-missing", "documentation-stale", "transition-candidate"]),
+        message: z.string(),
+        evidence: z.array(z.object({ type: z.enum(["git-diff", "git-history", "file", "checklist"]), value: z.string() })),
+        proposedAction: z.string(),
+        confidence: z.enum(["low", "medium", "high"]),
+      })),
+    },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+  }, async ({ since }) => textResult(reconcileProject(loadProject(root), { since })));
+
   server.registerTool("specdash.preview_change", {
     title: "Preview spec dashboard content change",
     description: "Create a hash-bound preview for a Markdown or MDX content file without writing it",
@@ -206,10 +228,10 @@ export function createSpecDashboardServer(rootInput: string): McpServer {
   server.registerTool("specdash.build", {
     title: "Build static spec dashboard",
     description: "Validate and generate the configured static dashboard output",
-    inputSchema: {},
+    inputSchema: { base: z.string().min(1).optional() },
     outputSchema: { exitCode: z.number(), output: z.string() },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-  }, async () => textResult(await buildProject(root)));
+  }, async ({ base }) => textResult(await buildProject(root, base)));
 
   return server;
 }

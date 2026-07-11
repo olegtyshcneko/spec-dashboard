@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { hrefFor } from "../../lib/project";
 const entries = (await getCollection("knowledge")).sort((a, b) => b.data.updated.localeCompare(a.data.updated));
 ---
 <BaseLayout title="Knowledge base">
@@ -10,7 +11,7 @@ const entries = (await getCollection("knowledge")).sort((a, b) => b.data.updated
     <div class="card-grid">
       {entries.map((entry) => (
         <article class="card">
-          <h3><a href={`/knowledge/${entry.data.id}/`}>{entry.data.id} · {entry.data.title}</a></h3>
+          <h3><a href={hrefFor("knowledge", entry.data.id)}>{entry.data.id} · {entry.data.title}</a></h3>
           <p>{entry.data.summary}</p>
           <div class="card-meta">{entry.data.kind} · {entry.data.updated}</div>
         </article>

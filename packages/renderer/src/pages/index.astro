@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { snapshot } from "../lib/project";
+import { snapshot, withBase } from "../lib/project";
 
 const specs = snapshot.specs;
 const knowledge = snapshot.knowledge;
@@ -24,7 +24,7 @@ const serialized = JSON.stringify(snapshot).replace(/</g, "\\u003c");
           <span class="overview-value">{value}</span><span class="overview-label">{label}</span>
         </button>
       ))}
-      <a class="overview-card" href="/health/"><span class="overview-value">{healthCount}</span><span class="overview-label">Health notes</span></a>
+      <a class="overview-card" href={withBase("health/")}><span class="overview-value">{healthCount}</span><span class="overview-label">Health notes</span></a>
     </section>
 
     {featuredKnowledge.length > 0 && (

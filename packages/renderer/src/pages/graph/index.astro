@@ -1,9 +1,9 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { projectModel } from "../../lib/project";
+import { hrefFor, projectModel } from "../../lib/project";
 const entries = [...projectModel.specs, ...projectModel.knowledge];
 const byId = new Map(entries.map((entry) => [entry.id, entry]));
-const href = (id: string) => id.startsWith("SPEC-") ? `/specs/${id}/` : `/knowledge/${id}/`;
+const href = (id: string) => hrefFor(id.startsWith("SPEC-") ? "specs" : "knowledge", id);
 ---
 <BaseLayout title="Relationship graph">
   <main>

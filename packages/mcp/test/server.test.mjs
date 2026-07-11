@@ -21,12 +21,16 @@ test("serves resources and structured tools over stdio", async () => {
     assert.ok(tools.tools.some((tool) => tool.name === "specdash.validate"));
     assert.ok(tools.tools.some((tool) => tool.name === "specdash.apply_change"));
     assert.ok(tools.tools.some((tool) => tool.name === "specdash.scan"));
+    assert.ok(tools.tools.some((tool) => tool.name === "specdash.reconcile"));
 
     const result = await client.callTool({ name: "specdash.validate", arguments: {} });
     assert.equal(result.structuredContent.valid, true);
     assert.equal(result.structuredContent.specs, 6);
     const scan = await client.callTool({ name: "specdash.scan", arguments: {} });
     assert.equal(scan.structuredContent.nextSpecId, "SPEC-007");
+    const reconciliation = await client.callTool({ name: "specdash.reconcile", arguments: { since: "HEAD~1" } });
+    assert.equal(reconciliation.structuredContent.repository.since, "HEAD~1");
+    assert.ok(Array.isArray(reconciliation.structuredContent.suggestions));
     const build = await client.callTool({ name: "specdash.build", arguments: {} });
     assert.equal(build.structuredContent.exitCode, 0);
 

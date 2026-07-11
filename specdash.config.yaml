@@ -7,6 +7,8 @@ outputDir: dist
 base: /
 quality:
   staleAfterDays: 90
+reconciliation:
+  baseRef: HEAD~1
 categories:
   - id: platform
     label: Platform

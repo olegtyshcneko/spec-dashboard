@@ -36,11 +36,12 @@ Generated output is written to `dist/` by default.
 ```sh
 node packages/cli/dist/index.js init --root /path/to/project
 node packages/cli/dist/index.js validate --root /path/to/project
+node packages/cli/dist/index.js reconcile --root /path/to/project --since HEAD~1
 node packages/cli/dist/index.js build --root /path/to/project
 node packages/cli/dist/index.js dev --root /path/to/project
 ```
 
-Use `--json` with `validate` for machine-readable diagnostics and `--out-dir` with `build` to override the configured output directory.
+Use `--json` with `validate` or `reconcile` for machine-readable output. `--since` selects the Git boundary for reconciliation, while `--out-dir` and `--base` override static build output and URL base paths.
 
 ## Dashboard intelligence
 
@@ -69,7 +70,7 @@ Or launch it for another initialized project:
 node packages/mcp/dist/index.js --root /path/to/project
 ```
 
-The server exposes project summary, graph, diagnostics, and item resources. Tools cover validation, content queries, project scans, hash-bound change previews, lifecycle transition previews, reviewed change application, and static builds.
+The server exposes project summary, graph, diagnostics, and item resources. Tools cover validation, content queries, project scans, Git reconciliation, hash-bound change previews, lifecycle transition previews, reviewed change application, and static builds.
 
 Writes are restricted to Markdown and MDX files under the configured content directory. Applying a change requires the revision returned by its preview; concurrent or invalid changes are rejected and invalid writes are rolled back.
 
@@ -78,7 +79,7 @@ Writes are restricted to Markdown and MDX files under the configured content dir
 Install the versioned repository marketplace and plugin:
 
 ```sh
-codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.4.1
+codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.5.0
 codex plugin add spec-dashboard@spec-dashboard
 ```
 
@@ -123,7 +124,13 @@ Knowledge entries use stable `KB-*` IDs and kinds such as `research`, `adr`, `ar
 
 ## Project configuration
 
-`specdash.config.yaml` defines project presentation, content/output paths, URL base, and the bounded category taxonomy. A referenced category must be declared in this file.
+`specdash.config.yaml` defines project presentation, content/output paths, URL base, reconciliation base ref, and the bounded category taxonomy. A referenced category must be declared in this file.
+
+## Git reconciliation and automation
+
+`specdash reconcile` compares configured file evidence with a Git boundary and reports changed sources, missing paths, documentation older than its implementation evidence, and possible lifecycle transitions. Suggestions include evidence and confidence but never mutate content; transitions still require an explicit preview and apply flow.
+
+The included GitHub Actions workflows validate, test, reconcile, and build on pull requests and `main`. A separate Pages workflow builds with the correct repository subpath and deploys the static artifact through GitHub Pages.
 
 ## Runtime model
 

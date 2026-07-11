@@ -4,10 +4,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { configPath, hasErrors, loadProject } from "@spec-dashboard/core";
+import { configPath, hasErrors, loadProject, reconcileProject } from "@spec-dashboard/core";
 
 const require = createRequire(import.meta.url);
-const VERSION = "0.4.1";
+const VERSION = "0.5.0";
 
 function arg(name: string, fallback?: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -30,7 +30,7 @@ function printDiagnostics(project: ReturnType<typeof loadProject>, json: boolean
   process.stdout.write(`${project.specs.length} specs, ${project.knowledge.length} knowledge entries, ${project.diagnostics.length} diagnostics\n`);
 }
 
-async function runAstro(command: "build" | "dev", root: string, outDir?: string): Promise<number> {
+async function runAstro(command: "build" | "dev", root: string, outDir?: string, baseOverride?: string): Promise<number> {
   const rendererRoot = fileURLToPath(new URL("../../renderer/", import.meta.url));
   const astroPackage = require.resolve("astro/package.json");
   const astroBin = path.join(path.dirname(astroPackage), "bin/astro.mjs");
@@ -39,7 +39,7 @@ async function runAstro(command: "build" | "dev", root: string, outDir?: string)
     ...process.env,
     SPECDASH_PROJECT_ROOT: root,
     SPECDASH_OUTPUT_DIR: path.resolve(root, outDir || config.outputDir),
-    SPECDASH_BASE: config.base,
+    SPECDASH_BASE: baseOverride ?? config.base,
   };
   return await new Promise((resolve) => {
     const child = spawn(process.execPath, [astroBin, command, "--root", rendererRoot], { env, stdio: "inherit" });
@@ -51,7 +51,7 @@ function initialize(root: string): void {
   if (fs.existsSync(configPath(root))) throw new Error(`Project already initialized at ${root}`);
   fs.mkdirSync(path.join(root, "content/specs"), { recursive: true });
   fs.mkdirSync(path.join(root, "content/knowledge"), { recursive: true });
-  fs.writeFileSync(configPath(root), `schemaVersion: 1\nproject:\n  name: ${path.basename(root)}\n  tagline: Specifications and project knowledge\ncontentDir: content\noutputDir: dist\nbase: /\nquality:\n  staleAfterDays: 90\ncategories:\n  - id: general\n    label: General\n`);
+  fs.writeFileSync(configPath(root), `schemaVersion: 1\nproject:\n  name: ${path.basename(root)}\n  tagline: Specifications and project knowledge\ncontentDir: content\noutputDir: dist\nbase: /\nquality:\n  staleAfterDays: 90\nreconciliation:\n  baseRef: HEAD~1\ncategories:\n  - id: general\n    label: General\n`);
   process.stdout.write(`Initialized spec dashboard at ${root}\n`);
 }
 
@@ -72,6 +72,16 @@ async function main(): Promise<void> {
     process.exitCode = hasErrors(project) ? 1 : 0;
     return;
   }
+  if (command === "reconcile") {
+    const report = reconcileProject(loadProject(root), { since: arg("--since") });
+    if (process.argv.includes("--json")) {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    } else {
+      process.stdout.write(`${report.changedFiles.length} changed files, ${report.suggestions.length} suggestions since ${report.repository.since}\n`);
+      for (const suggestion of report.suggestions) process.stdout.write(`${suggestion.kind.toUpperCase()} ${suggestion.itemId}: ${suggestion.message}\n`);
+    }
+    return;
+  }
   if (command === "build" || command === "dev") {
     const project = loadProject(root);
     printDiagnostics(project, false);
@@ -79,10 +89,10 @@ async function main(): Promise<void> {
       process.exitCode = 1;
       return;
     }
-    process.exitCode = await runAstro(command, root, arg("--out-dir"));
+    process.exitCode = await runAstro(command, root, arg("--out-dir"), arg("--base"));
     return;
   }
-  process.stdout.write(`specdash ${VERSION}\n\nCommands:\n  init       Initialize content and configuration\n  validate   Validate schema and references\n  build      Generate a static dashboard\n  dev        Start the Astro development server\n\nOptions:\n  --root <path>\n  --out-dir <path>\n  --json\n`);
+  process.stdout.write(`specdash ${VERSION}\n\nCommands:\n  init       Initialize content and configuration\n  validate   Validate schema and references\n  reconcile  Compare specs with Git evidence\n  build      Generate a static dashboard\n  dev        Start the Astro development server\n\nOptions:\n  --root <path>\n  --out-dir <path>\n  --base <url-path>\n  --since <git-ref>\n  --json\n`);
 }
 
 main().catch((error: unknown) => {
