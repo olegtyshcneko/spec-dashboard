@@ -1,22 +1,452 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { hrefFor, projectModel } from "../../lib/project";
+
 const entries = [...projectModel.specs, ...projectModel.knowledge];
 const byId = new Map(entries.map((entry) => [entry.id, entry]));
 const href = (id: string) => hrefFor(id.startsWith("SPEC-") ? "specs" : "knowledge", id);
+const dependencyEdges = projectModel.edges.filter((edge) => edge.type === "depends-on");
+const dependenciesById = new Map(entries.map((entry) => [entry.id, dependencyEdges.filter((edge) => edge.from === entry.id).map((edge) => edge.to)]));
+
+const depthMemo = new Map<string, number>();
+function dependencyDepth(id: string, visiting = new Set<string>()): number {
+  const cached = depthMemo.get(id);
+  if (cached !== undefined) return cached;
+  if (visiting.has(id)) return 0;
+  const nextVisiting = new Set(visiting).add(id);
+  const dependencies = dependenciesById.get(id) ?? [];
+  const depth = dependencies.length === 0 ? 0 : Math.max(...dependencies.map((dependency) => dependencyDepth(dependency, nextVisiting) + 1));
+  depthMemo.set(id, depth);
+  return depth;
+}
+
+const columns = new Map<number, typeof entries>();
+for (const entry of entries) {
+  const depth = dependencyDepth(entry.id);
+  columns.set(depth, [...(columns.get(depth) ?? []), entry]);
+}
+for (const column of columns.values()) column.sort((left, right) => left.id.localeCompare(right.id));
+
+const nodeWidth = 220;
+const nodeHeight = 82;
+const columnGap = 96;
+const rowGap = 42;
+const paddingX = 54;
+const paddingY = 54;
+const maxDepth = Math.max(0, ...columns.keys());
+const maxRows = Math.max(1, ...[...columns.values()].map((column) => column.length));
+const graphWidth = Math.max(760, paddingX * 2 + (maxDepth + 1) * nodeWidth + maxDepth * columnGap);
+const graphHeight = Math.max(400, paddingY * 2 + maxRows * nodeHeight + (maxRows - 1) * rowGap);
+
+const positions = new Map<string, { x: number; y: number }>();
+for (const [depth, column] of columns) {
+  const occupiedHeight = column.length * nodeHeight + Math.max(0, column.length - 1) * rowGap;
+  const startY = (graphHeight - occupiedHeight) / 2;
+  column.forEach((entry, index) => positions.set(entry.id, {
+    x: paddingX + depth * (nodeWidth + columnGap),
+    y: startY + index * (nodeHeight + rowGap),
+  }));
+}
+
+type VisualEdge = { from: string; to: string; type: "depends-on" | "related" };
+const relatedKeys = new Set<string>();
+const visualEdges: VisualEdge[] = [
+  ...dependencyEdges.map((edge) => ({ from: edge.to, to: edge.from, type: "depends-on" as const })),
+  ...projectModel.edges.filter((edge) => edge.type === "related").flatMap((edge) => {
+    const key = [edge.from, edge.to].sort().join(":");
+    if (relatedKeys.has(key)) return [];
+    relatedKeys.add(key);
+    return [{ from: edge.from, to: edge.to, type: "related" as const }];
+  }),
+];
+const textEdges = [
+  ...dependencyEdges,
+  ...visualEdges.filter((edge) => edge.type === "related"),
+];
+
+function edgePath(edge: VisualEdge): string {
+  const from = positions.get(edge.from)!;
+  const to = positions.get(edge.to)!;
+  const sameColumn = Math.abs(to.x - from.x) < 1;
+  if (sameColumn) {
+    const routeLeft = from.x < graphWidth / 2;
+    const anchorX = from.x + (routeLeft ? 0 : nodeWidth);
+    const curveOffset = 46 + Math.abs(to.y - from.y) * 0.16;
+    const controlX = routeLeft ? Math.max(12, anchorX - curveOffset) : Math.min(graphWidth - 12, anchorX + curveOffset);
+    return `M ${anchorX} ${from.y + nodeHeight / 2} C ${controlX} ${from.y + nodeHeight / 2}, ${controlX} ${to.y + nodeHeight / 2}, ${anchorX} ${to.y + nodeHeight / 2}`;
+  }
+  const leftToRight = to.x >= from.x;
+  const startX = from.x + (leftToRight ? nodeWidth : 0);
+  const endX = to.x + (leftToRight ? 0 : nodeWidth);
+  const startY = from.y + nodeHeight / 2;
+  const endY = to.y + nodeHeight / 2;
+  const bend = Math.max(48, Math.abs(endX - startX) * 0.45);
+  return `M ${startX} ${startY} C ${startX + (leftToRight ? bend : -bend)} ${startY}, ${endX - (leftToRight ? bend : -bend)} ${endY}, ${endX} ${endY}`;
+}
+
+function shortTitle(value: string): string {
+  return value.length > 29 ? `${value.slice(0, 27)}…` : value;
+}
+
+const categories = [...new Set(entries.flatMap((entry) => entry.data.categories))].sort();
+const states = [...new Set(projectModel.specs.map((entry) => entry.data.state))].sort();
+const defaultView = entries.length > 80 ? "list" : "map";
 ---
 <BaseLayout title="Relationship graph">
-  <main>
-    <h1>Relationship graph</h1>
-    <p class="summary">Generated dependencies, related knowledge, and backlinks across the project.</p>
-    <div class="graph-list">
-      {projectModel.edges.map((edge) => (
-        <article class="graph-edge">
-          <a href={href(edge.from)}>{edge.from} · {byId.get(edge.from)?.data.title}</a>
-          <span class="relation-label">{edge.type}</span>
-          <a href={href(edge.to)}>{edge.to} · {byId.get(edge.to)?.data.title}</a>
-        </article>
-      ))}
+  <main class="relationship-page" data-default-view={defaultView} data-node-total={entries.length}>
+    <div class="graph-heading">
+      <div>
+        <h1>Relationship graph</h1>
+        <p class="summary">Explore prerequisites, downstream work, and connected knowledge as a map or a structured relationship list.</p>
+      </div>
+      <div class="graph-count">{entries.length} nodes · {visualEdges.length} visual relationships</div>
     </div>
+
+    <div class="graph-toolbar" aria-label="Graph controls">
+      <div class="graph-view-switch" role="group" aria-label="View">
+        <button type="button" data-view-button="map" aria-pressed="false">Map</button>
+        <button type="button" data-view-button="list" aria-pressed="false">List</button>
+      </div>
+
+      <label>Category
+        <select id="graph-category">
+          <option value="">All categories</option>
+          {categories.map((category) => <option value={category}>{projectModel.config.categories.find((candidate) => candidate.id === category)?.label ?? category}</option>)}
+        </select>
+      </label>
+
+      <label>Lifecycle
+        <select id="graph-state">
+          <option value="">All states</option>
+          {states.map((state) => <option value={state}>{state}</option>)}
+          {projectModel.knowledge.length > 0 && <option value="knowledge">knowledge</option>}
+        </select>
+      </label>
+
+      <label class="graph-focus-control">Focus node
+        <select id="graph-focus">
+          <option value="">No focus</option>
+          {entries.map((entry) => <option value={entry.id}>{entry.id} · {entry.data.title}</option>)}
+        </select>
+      </label>
+
+      <label>Reach
+        <select id="graph-hops" disabled>
+          <option value="1">1 hop</option>
+          <option value="2" selected>2 hops</option>
+          <option value="3">3 hops</option>
+        </select>
+      </label>
+
+      <label class="graph-check"><input id="graph-context" type="checkbox" checked /> Include 1-hop context</label>
+      <button type="button" class="graph-clear" id="graph-clear">Clear scope</button>
+
+      <div class="graph-zoom" data-zoom-controls role="group" aria-label="Map zoom">
+        <button type="button" data-zoom="out" aria-label="Zoom out">−</button>
+        <button type="button" data-zoom="fit">Fit</button>
+        <button type="button" data-zoom="in" aria-label="Zoom in">+</button>
+        <span id="graph-zoom-value">100%</span>
+      </div>
+    </div>
+
+    <div class="graph-scope-status" id="graph-scope-status" aria-live="polite"></div>
+
+    <section class="graph-panel" data-graph-panel="map">
+      <div class="graph-legend" aria-label="Graph legend">
+        <span><i class="legend-node legend-spec"></i>Specification</span>
+        <span><i class="legend-node legend-knowledge"></i>Knowledge</span>
+        <span><i class="legend-line legend-dependency"></i>Prerequisite → dependent</span>
+        <span><i class="legend-line legend-related"></i>Related</span>
+      </div>
+
+      <div class="graph-shell">
+        <div class="graph-empty" id="graph-empty" hidden>No nodes match this scope.</div>
+        <svg
+          class="relationship-map"
+          viewBox={`0 0 ${graphWidth} ${graphHeight}`}
+          width="100%"
+          role="img"
+          aria-label={`Relationship graph with ${entries.length} nodes and ${visualEdges.length} relationships`}
+        >
+          <defs>
+            <marker id="dependency-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z"></path>
+            </marker>
+            <filter id="node-shadow" x="-20%" y="-30%" width="140%" height="170%">
+              <feDropShadow dx="0" dy="5" stdDeviation="6" flood-opacity="0.24"></feDropShadow>
+            </filter>
+          </defs>
+
+          <g class="graph-edges" aria-hidden="true">
+            {visualEdges.map((edge) => (
+              <path
+                class:list={["map-edge", `map-edge-${edge.type}`]}
+                d={edgePath(edge)}
+                marker-end={edge.type === "depends-on" ? "url(#dependency-arrow)" : undefined}
+                data-from={edge.from}
+                data-to={edge.to}
+                data-edge-type={edge.type}
+              >
+                <title>{edge.type === "depends-on" ? `${edge.from} enables ${edge.to}` : `${edge.from} is related to ${edge.to}`}</title>
+              </path>
+            ))}
+          </g>
+
+          <g class="graph-nodes">
+            {entries.map((entry) => {
+              const position = positions.get(entry.id)!;
+              const isKnowledge = entry.id.startsWith("KB-");
+              const state = "state" in entry.data ? entry.data.state : "knowledge";
+              return (
+                <a href={href(entry.id)} class="map-node-link" aria-label={`${entry.id}: ${entry.data.title}`}>
+                  <g
+                    class:list={["map-node", isKnowledge ? "map-node-knowledge" : "map-node-spec"]}
+                    transform={`translate(${position.x} ${position.y})`}
+                    data-node-id={entry.id}
+                    data-depth={dependencyDepth(entry.id)}
+                    data-categories={entry.data.categories.join(" ")}
+                    data-state={state}
+                    tabindex="0"
+                  >
+                    <title>{entry.id} · {entry.data.title}</title>
+                    <rect width={nodeWidth} height={nodeHeight} rx="12" filter="url(#node-shadow)"></rect>
+                    <text class="map-node-id" x="16" y="23">{entry.id}</text>
+                    <text class="map-node-title" x="16" y="47">{shortTitle(entry.data.title)}</text>
+                    <text class="map-node-meta" x="16" y="68">{state} · {entry.data.categories.join(", ")}</text>
+                  </g>
+                </a>
+              );
+            })}
+          </g>
+        </svg>
+      </div>
+      <p class="graph-hint">Hover or focus a node to isolate immediate relationships. Use Ctrl/⌘ + wheel or the controls to zoom; the canvas scrolls when enlarged.</p>
+    </section>
+
+    <section class="graph-panel graph-list-panel" data-graph-panel="list" hidden>
+      <div class="graph-list">
+        {textEdges.map((edge) => (
+          <article class="graph-edge" data-list-from={edge.from} data-list-to={edge.to}>
+            <a href={href(edge.from)}>{edge.from} · {byId.get(edge.from)?.data.title}</a>
+            <span class="relation-label">{edge.type}</span>
+            <a href={href(edge.to)}>{edge.to} · {byId.get(edge.to)?.data.title}</a>
+          </article>
+        ))}
+      </div>
+      <p class="empty" id="graph-list-empty" hidden>No relationships match this scope.</p>
+    </section>
   </main>
+
+  <script>
+    const page = document.querySelector(".relationship-page");
+    const map = document.querySelector(".relationship-map");
+    const shell = document.querySelector(".graph-shell");
+    const nodes = [...map.querySelectorAll("[data-node-id]")];
+    const nodeById = new Map(nodes.map((node) => [node.dataset.nodeId, node]));
+    const edges = [...map.querySelectorAll("[data-from][data-to]")];
+    const listEdges = [...document.querySelectorAll("[data-list-from][data-list-to]")];
+    const panels = [...document.querySelectorAll("[data-graph-panel]")];
+    const viewButtons = [...document.querySelectorAll("[data-view-button]")];
+    const category = document.querySelector("#graph-category");
+    const state = document.querySelector("#graph-state");
+    const focus = document.querySelector("#graph-focus");
+    const hops = document.querySelector("#graph-hops");
+    const context = document.querySelector("#graph-context");
+    const status = document.querySelector("#graph-scope-status");
+    const emptyMap = document.querySelector("#graph-empty");
+    const emptyList = document.querySelector("#graph-list-empty");
+    const zoomControls = document.querySelector("[data-zoom-controls]");
+    const zoomValue = document.querySelector("#graph-zoom-value");
+    const params = new URLSearchParams(location.search);
+    const adjacency = new Map(nodes.map((node) => [node.dataset.nodeId, new Set()]));
+    const NODE_WIDTH = 220;
+    const NODE_HEIGHT = 82;
+    const COLUMN_GAP = 96;
+    const ROW_GAP = 42;
+    const PADDING_X = 54;
+    const PADDING_Y = 54;
+    let currentView = params.get("view") || localStorage.getItem("specdash-graph-view") || page.dataset.defaultView;
+    let zoom = 1;
+
+    for (const edge of edges) {
+      adjacency.get(edge.dataset.from)?.add(edge.dataset.to);
+      adjacency.get(edge.dataset.to)?.add(edge.dataset.from);
+    }
+
+    category.value = params.get("category") || "";
+    state.value = params.get("state") || "";
+    focus.value = params.get("focus") || "";
+    hops.value = params.get("hops") || "2";
+    context.checked = params.get("context") !== "0";
+    hops.disabled = !focus.value;
+
+    function scopedIds() {
+      let focusScope = new Set(nodeById.keys());
+      if (focus.value && nodeById.has(focus.value)) {
+        focusScope = new Set([focus.value]);
+        let frontier = new Set([focus.value]);
+        for (let step = 0; step < Number(hops.value); step += 1) {
+          const next = new Set();
+          for (const id of frontier) for (const neighbor of adjacency.get(id) || []) if (!focusScope.has(neighbor)) next.add(neighbor);
+          for (const id of next) focusScope.add(id);
+          frontier = next;
+        }
+      }
+
+      const matches = new Set(nodes.filter((node) => {
+        if (!focusScope.has(node.dataset.nodeId)) return false;
+        if (category.value && !node.dataset.categories.split(" ").includes(category.value)) return false;
+        if (state.value && node.dataset.state !== state.value) return false;
+        return true;
+      }).map((node) => node.dataset.nodeId));
+
+      if (context.checked && (category.value || state.value)) {
+        for (const id of [...matches]) {
+          for (const neighbor of adjacency.get(id) || []) if (focusScope.has(neighbor)) matches.add(neighbor);
+        }
+      }
+      if (focus.value && nodeById.has(focus.value)) matches.add(focus.value);
+      return matches;
+    }
+
+    function pathFor(from, to, width) {
+      const sameColumn = Math.abs(to.x - from.x) < 1;
+      if (sameColumn) {
+        const routeLeft = from.x < width / 2;
+        const anchorX = from.x + (routeLeft ? 0 : NODE_WIDTH);
+        const offset = 46 + Math.abs(to.y - from.y) * 0.16;
+        const controlX = routeLeft ? Math.max(12, anchorX - offset) : Math.min(width - 12, anchorX + offset);
+        return `M ${anchorX} ${from.y + NODE_HEIGHT / 2} C ${controlX} ${from.y + NODE_HEIGHT / 2}, ${controlX} ${to.y + NODE_HEIGHT / 2}, ${anchorX} ${to.y + NODE_HEIGHT / 2}`;
+      }
+      const leftToRight = to.x >= from.x;
+      const startX = from.x + (leftToRight ? NODE_WIDTH : 0);
+      const endX = to.x + (leftToRight ? 0 : NODE_WIDTH);
+      const startY = from.y + NODE_HEIGHT / 2;
+      const endY = to.y + NODE_HEIGHT / 2;
+      const bend = Math.max(48, Math.abs(endX - startX) * 0.45);
+      return `M ${startX} ${startY} C ${startX + (leftToRight ? bend : -bend)} ${startY}, ${endX - (leftToRight ? bend : -bend)} ${endY}, ${endX} ${endY}`;
+    }
+
+    function reflow(visible) {
+      const visibleNodes = nodes.filter((node) => visible.has(node.dataset.nodeId));
+      const depths = [...new Set(visibleNodes.map((node) => Number(node.dataset.depth)))].sort((left, right) => left - right);
+      const depthIndex = new Map(depths.map((depth, index) => [depth, index]));
+      const columns = new Map(depths.map((depth) => [depth, visibleNodes.filter((node) => Number(node.dataset.depth) === depth).sort((left, right) => left.dataset.nodeId.localeCompare(right.dataset.nodeId))]));
+      const maxRows = Math.max(1, ...[...columns.values()].map((column) => column.length));
+      const width = Math.max(760, PADDING_X * 2 + Math.max(1, depths.length) * NODE_WIDTH + Math.max(0, depths.length - 1) * COLUMN_GAP);
+      const height = Math.max(320, PADDING_Y * 2 + maxRows * NODE_HEIGHT + Math.max(0, maxRows - 1) * ROW_GAP);
+      const positions = new Map();
+
+      for (const [depth, column] of columns) {
+        const occupied = column.length * NODE_HEIGHT + Math.max(0, column.length - 1) * ROW_GAP;
+        const startY = (height - occupied) / 2;
+        column.forEach((node, index) => {
+          const position = { x: PADDING_X + depthIndex.get(depth) * (NODE_WIDTH + COLUMN_GAP), y: startY + index * (NODE_HEIGHT + ROW_GAP) };
+          positions.set(node.dataset.nodeId, position);
+          node.setAttribute("transform", `translate(${position.x} ${position.y})`);
+        });
+      }
+
+      for (const node of nodes) node.style.display = visible.has(node.dataset.nodeId) ? "" : "none";
+      for (const edge of edges) {
+        const shown = visible.has(edge.dataset.from) && visible.has(edge.dataset.to);
+        edge.style.display = shown ? "" : "none";
+        if (shown) edge.setAttribute("d", pathFor(positions.get(edge.dataset.from), positions.get(edge.dataset.to), width));
+      }
+      map.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      emptyMap.hidden = visibleNodes.length > 0;
+      return visibleNodes.length;
+    }
+
+    function updateUrl() {
+      const next = new URLSearchParams();
+      if (currentView !== page.dataset.defaultView) next.set("view", currentView);
+      if (category.value) next.set("category", category.value);
+      if (state.value) next.set("state", state.value);
+      if (focus.value) next.set("focus", focus.value);
+      if (focus.value && hops.value !== "2") next.set("hops", hops.value);
+      if (!context.checked) next.set("context", "0");
+      history.replaceState(null, "", `${location.pathname}${next.size ? `?${next}` : ""}`);
+    }
+
+    function applyScope() {
+      const visible = scopedIds();
+      const nodeCount = reflow(visible);
+      let visualEdgeCount = 0;
+      for (const edge of edges) if (visible.has(edge.dataset.from) && visible.has(edge.dataset.to)) visualEdgeCount += 1;
+      let listCount = 0;
+      for (const edge of listEdges) {
+        const shown = visible.has(edge.dataset.listFrom) && visible.has(edge.dataset.listTo);
+        edge.hidden = !shown;
+        if (shown) listCount += 1;
+      }
+      emptyList.hidden = listCount > 0;
+      status.textContent = `Showing ${nodeCount} of ${nodes.length} nodes · ${visualEdgeCount} unique relationships${focus.value ? ` · focused on ${focus.value} within ${hops.value} hop${hops.value === "1" ? "" : "s"}` : ""}`;
+      updateUrl();
+    }
+
+    function setView(view) {
+      currentView = view === "list" ? "list" : "map";
+      for (const panel of panels) panel.hidden = panel.dataset.graphPanel !== currentView;
+      for (const button of viewButtons) button.setAttribute("aria-pressed", String(button.dataset.viewButton === currentView));
+      zoomControls.hidden = currentView !== "map";
+      localStorage.setItem("specdash-graph-view", currentView);
+      updateUrl();
+    }
+
+    function setZoom(next) {
+      zoom = Math.max(0.6, Math.min(2.2, next));
+      map.style.width = `${Math.round(zoom * 100)}%`;
+      zoomValue.textContent = `${Math.round(zoom * 100)}%`;
+      if (zoom === 1) shell.scrollTo({ left: 0, top: 0, behavior: "smooth" });
+    }
+
+    function highlight(id) {
+      const connected = new Set([id, ...(adjacency.get(id) || [])]);
+      for (const edge of edges) {
+        if (edge.style.display === "none") continue;
+        edge.classList.toggle("is-highlighted", edge.dataset.from === id || edge.dataset.to === id);
+        edge.classList.toggle("is-muted", edge.dataset.from !== id && edge.dataset.to !== id);
+      }
+      for (const node of nodes) if (node.style.display !== "none") node.classList.toggle("is-muted", !connected.has(node.dataset.nodeId));
+    }
+
+    function clearHighlight() {
+      for (const node of nodes) node.classList.remove("is-muted");
+      for (const edge of edges) edge.classList.remove("is-highlighted", "is-muted");
+    }
+
+    for (const button of viewButtons) button.addEventListener("click", () => setView(button.dataset.viewButton));
+    for (const control of [category, state, focus, hops, context]) control.addEventListener("change", () => {
+      hops.disabled = !focus.value;
+      applyScope();
+    });
+    document.querySelector("#graph-clear").addEventListener("click", () => {
+      category.value = "";
+      state.value = "";
+      focus.value = "";
+      hops.value = "2";
+      hops.disabled = true;
+      context.checked = true;
+      applyScope();
+    });
+    for (const button of document.querySelectorAll("[data-zoom]")) button.addEventListener("click", () => {
+      if (button.dataset.zoom === "fit") setZoom(1);
+      else setZoom(zoom + (button.dataset.zoom === "in" ? 0.2 : -0.2));
+    });
+    shell.addEventListener("wheel", (event) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      setZoom(zoom + (event.deltaY < 0 ? 0.1 : -0.1));
+    }, { passive: false });
+    for (const node of nodes) {
+      node.addEventListener("pointerenter", () => highlight(node.dataset.nodeId));
+      node.addEventListener("focusin", () => highlight(node.dataset.nodeId));
+    }
+    map.addEventListener("pointerleave", clearHighlight);
+    map.addEventListener("focusout", (event) => { if (!map.contains(event.relatedTarget)) clearHighlight(); });
+
+    setView(currentView);
+    applyScope();
+  </script>
 </BaseLayout>
