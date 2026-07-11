@@ -1,0 +1,12 @@
+interface:
+  display_name: "Review Spec Quality"
+  short_description: "Review readiness and evidence quality"
+  default_prompt: "Use $review-spec-quality to review this dashboard for vague scope, missing evidence, and readiness gaps."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "spec-dashboard"
+      description: "Local Spec Dashboard project server"
+      transport: "stdio"
+policy:
+  allow_implicit_invocation: true

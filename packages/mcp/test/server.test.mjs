@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -34,5 +36,31 @@ test("serves resources and structured tools over stdio", async () => {
     assert.match(item.contents[0].text, /Scoped project MCP server/);
   } finally {
     await client.close();
+  }
+});
+
+test("initializes an unconfigured project through preview and apply", async () => {
+  const repoRoot = path.resolve(import.meta.dirname, "../../..");
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), "specdash-init-"));
+  const transport = new StdioClientTransport({
+    command: process.execPath,
+    args: [path.join(repoRoot, "packages/mcp/dist/index.js"), "--root", projectRoot],
+    cwd: projectRoot,
+    stderr: "pipe",
+  });
+  const client = new Client({ name: "specdash-init-test", version: "1.0.0" });
+  try {
+    await client.connect(transport);
+    const preview = await client.callTool({ name: "specdash.init", arguments: { projectName: "New Project", categories: [{ id: "platform", label: "Platform" }], apply: false } });
+    assert.equal(preview.structuredContent.applied, false);
+    assert.equal(fs.existsSync(path.join(projectRoot, "specdash.config.yaml")), false);
+    const applied = await client.callTool({ name: "specdash.init", arguments: { projectName: "New Project", categories: [{ id: "platform", label: "Platform" }], apply: true } });
+    assert.equal(applied.structuredContent.initialized, true);
+    assert.equal(fs.existsSync(path.join(projectRoot, "specdash.config.yaml")), true);
+    const validation = await client.callTool({ name: "specdash.validate", arguments: {} });
+    assert.equal(validation.structuredContent.valid, true);
+  } finally {
+    await client.close();
+    fs.rmSync(projectRoot, { recursive: true, force: true });
   }
 });

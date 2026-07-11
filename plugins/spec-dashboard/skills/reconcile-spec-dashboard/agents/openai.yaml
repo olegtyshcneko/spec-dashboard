@@ -1,0 +1,12 @@
+interface:
+  display_name: "Reconcile Spec Dashboard"
+  short_description: "Find and propose documentation drift fixes"
+  default_prompt: "Use $reconcile-spec-dashboard to compare the dashboard with current project evidence."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "spec-dashboard"
+      description: "Local Spec Dashboard project server"
+      transport: "stdio"
+policy:
+  allow_implicit_invocation: true

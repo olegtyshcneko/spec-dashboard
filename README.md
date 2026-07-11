@@ -73,6 +73,24 @@ The server exposes project summary, graph, diagnostics, and item resources. Tool
 
 Writes are restricted to Markdown and MDX files under the configured content directory. Applying a change requires the revision returned by its preview; concurrent or invalid changes are rejected and invalid writes are rolled back.
 
+## Codex plugin
+
+Install the versioned repository marketplace and plugin:
+
+```sh
+codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.4.0
+codex plugin add spec-dashboard@spec-dashboard
+```
+
+The plugin bundles the project-scoped MCP configuration and four workflows:
+
+- `bootstrap-spec-dashboard` initializes a reviewed project baseline;
+- `capture-spec-work` creates or updates one evidence-backed item;
+- `reconcile-spec-dashboard` finds drift and previews fixes;
+- `review-spec-quality` critiques readiness, evidence, scope, and testability.
+
+The MCP launch is pinned to the same GitHub release tag. Its first start uses `npx` to install the tagged compiler package and then runs `specdash-mcp` against the active project root.
+
 ## Content model
 
 Specification frontmatter separates lifecycle from kind and priority:

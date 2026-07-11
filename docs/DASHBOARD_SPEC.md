@@ -50,3 +50,9 @@ The site remains static and backend-free after compilation.
 The local stdio server exposes the same core model through `specdash://` resources. Read-only tools validate, query, scan, and preview. Write tools require a preview ID plus the expected content revision, perform atomic writes inside the configured content root, and roll back changes that introduce validation errors.
 
 Lifecycle transitions follow an explicit state machine. A transition preview fails when the requested edge is not allowed; semantic state changes are never inferred or silently applied.
+
+## Plugin contract
+
+The repository marketplace distributes one plugin that points to the version-matched stdio MCP package and four narrowly triggered skills. Skill instructions orchestrate inspection and review; deterministic schema, query, preview, apply, transition, and build behavior remains in the MCP/core packages.
+
+`bootstrap-spec-dashboard` is the only workflow that initializes an unconfigured project. `capture-spec-work` owns focused creation and updates, `reconcile-spec-dashboard` owns evidence-based drift review, and `review-spec-quality` owns critique-first readiness review.

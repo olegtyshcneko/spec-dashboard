@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import matter from "gray-matter";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod/v4";
-import { assertTransition, hasErrors, loadProject, projectSnapshot } from "@spec-dashboard/core";
+import { assertTransition, configPath, hasErrors, loadProject, projectSnapshot } from "@spec-dashboard/core";
 import { ChangeStore } from "./change-store.js";
 
 const require = createRequire(import.meta.url);
@@ -28,10 +28,34 @@ async function buildProject(root: string): Promise<{ exitCode: number; output: s
 
 export function createSpecDashboardServer(rootInput: string): McpServer {
   const root = fs.realpathSync(path.resolve(rootInput));
-  const changes = new ChangeStore(root);
-  const server = new McpServer({ name: "spec-dashboard", version: "0.3.0" });
+  let changes: ChangeStore | undefined;
+  const changeStore = () => changes ??= new ChangeStore(root);
+  const server = new McpServer({ name: "spec-dashboard", version: "0.4.0" });
 
   const readJson = (uri: string, value: unknown) => ({ contents: [{ uri, mimeType: "application/json", text: JSON.stringify(value, null, 2) }] });
+
+  server.registerTool("specdash.init", {
+    title: "Initialize spec dashboard",
+    description: "Preview or create the bounded project configuration and content directories in an uninitialized repository",
+    inputSchema: {
+      projectName: z.string().min(1),
+      categories: z.array(z.object({ id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), label: z.string().min(1) })).min(1).default([{ id: "general", label: "General" }]),
+      apply: z.boolean().default(false),
+    },
+    outputSchema: { initialized: z.boolean(), applied: z.boolean(), configPath: z.string(), preview: z.string() },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ projectName, categories, apply }) => {
+    const target = configPath(root);
+    if (fs.existsSync(target)) throw new Error(`Project is already initialized at ${target}`);
+    const preview = `schemaVersion: 1\nproject:\n  name: ${JSON.stringify(projectName)}\n  tagline: Specifications and project knowledge\ncontentDir: content\noutputDir: dist\nbase: /\nquality:\n  staleAfterDays: 90\ncategories:\n${categories.map((category) => `  - id: ${category.id}\n    label: ${JSON.stringify(category.label)}`).join("\n")}\n`;
+    if (apply) {
+      fs.mkdirSync(path.join(root, "content/specs"), { recursive: true });
+      fs.mkdirSync(path.join(root, "content/knowledge"), { recursive: true });
+      fs.writeFileSync(target, preview, { encoding: "utf8", flag: "wx" });
+      changes = new ChangeStore(root);
+    }
+    return textResult({ initialized: apply, applied: apply, configPath: path.relative(root, target), preview });
+  });
 
   server.registerResource("project-summary", "specdash://project/summary", {
     title: "Spec dashboard project summary",
@@ -146,7 +170,7 @@ export function createSpecDashboardServer(rootInput: string): McpServer {
     outputSchema: { changeId: z.string(), relativePath: z.string(), expectedRevision: z.string(), diff: z.string() },
     annotations: { readOnlyHint: true, openWorldHint: false },
   }, async ({ relativePath, content }) => {
-    const preview = changes.preview(relativePath, content);
+    const preview = changeStore().preview(relativePath, content);
     return textResult({ changeId: preview.changeId, relativePath, expectedRevision: preview.expectedRevision, diff: preview.diff });
   });
 
@@ -170,7 +194,7 @@ export function createSpecDashboardServer(rootInput: string): McpServer {
     parsed.data.updated = new Date().toISOString().slice(0, 10);
     if (evidence) parsed.data.sourceRefs = [...(parsed.data.sourceRefs ?? []), evidence];
     const content = matter.stringify(parsed.content, parsed.data);
-    const preview = changes.preview(entry.relativePath, content);
+    const preview = changeStore().preview(entry.relativePath, content);
     return textResult({ changeId: preview.changeId, relativePath: preview.relativePath, expectedRevision: preview.expectedRevision, diff: preview.diff });
   });
 
@@ -180,7 +204,7 @@ export function createSpecDashboardServer(rootInput: string): McpServer {
     inputSchema: { changeId: z.string().length(64), expectedRevision: z.string().min(3) },
     outputSchema: { applied: z.boolean(), relativePath: z.string(), revision: z.string(), diagnostics: z.array(z.record(z.string(), z.unknown())) },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
-  }, async ({ changeId, expectedRevision }) => textResult(changes.apply(changeId, expectedRevision)));
+  }, async ({ changeId, expectedRevision }) => textResult(changeStore().apply(changeId, expectedRevision)));
 
   server.registerTool("specdash.build", {
     title: "Build static spec dashboard",

@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "spec-dashboard": {
+      "command": "npx",
+      "args": [
+        "--yes",
+        "--package=github:olegtyshcneko/spec-dashboard#v0.4.0",
+        "specdash-mcp",
+        "--root",
+        "."
+      ]
+    }
+  }
+}

@@ -4,17 +4,16 @@ id: SPEC-005
 title: Codex plugin and focused skills
 summary: Distribute the MCP server with reusable bootstrap, capture, reconciliation, and quality-review workflows.
 kind: feature
-state: active
+state: shipped
 priority: p1
 categories: [platform, documentation]
 tags: [codex, skills, plugin]
 owners: [maintainer]
-nextAction: Scaffold the plugin and initialize its focused skills with MCP dependencies.
 dependsOn: [SPEC-004]
 related: []
 sourceRefs:
   - type: file
-    value: packages/mcp/src/server.ts
+    value: plugins/spec-dashboard/.codex-plugin/plugin.json
 created: 2026-07-11
 updated: 2026-07-11
 featured: false
@@ -22,7 +21,7 @@ featured: false
 
 ## Acceptance criteria
 
-- [ ] Package MCP configuration and skills in one validated plugin.
-- [ ] Keep each skill focused on one trigger and outcome.
-- [ ] Declare MCP dependencies in skill metadata.
-- [ ] Validate skills and the plugin before release.
+- [x] Package MCP configuration and skills in one validated plugin.
+- [x] Keep each skill focused on one trigger and outcome.
+- [x] Declare MCP dependencies in skill metadata.
+- [x] Validate skills and the plugin before release.

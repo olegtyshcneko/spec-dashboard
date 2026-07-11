@@ -1,0 +1,12 @@
+interface:
+  display_name: "Capture Spec Work"
+  short_description: "Turn project work into a validated spec"
+  default_prompt: "Use $capture-spec-work to capture this request as a validated project specification."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "spec-dashboard"
+      description: "Local Spec Dashboard project server"
+      transport: "stdio"
+policy:
+  allow_implicit_invocation: true

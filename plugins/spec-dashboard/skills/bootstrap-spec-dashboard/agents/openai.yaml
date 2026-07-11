@@ -1,0 +1,12 @@
+interface:
+  display_name: "Bootstrap Spec Dashboard"
+  short_description: "Initialize a project planning dashboard"
+  default_prompt: "Use $bootstrap-spec-dashboard to inspect this project and create a reviewed dashboard baseline."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "spec-dashboard"
+      description: "Local Spec Dashboard project server"
+      transport: "stdio"
+policy:
+  allow_implicit_invocation: true
