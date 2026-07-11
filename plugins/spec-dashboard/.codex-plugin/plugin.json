@@ -1,6 +1,6 @@
 {
   "name": "spec-dashboard",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Build and maintain a Git-native specification, planning, backlog, and knowledge dashboard.",
   "author": {
     "name": "Oleg Tyshchenko",

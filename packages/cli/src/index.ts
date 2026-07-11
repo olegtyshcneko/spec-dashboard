@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { configPath, hasErrors, loadProject, reconcileProject } from "@spec-dashboard/core";
 
 const require = createRequire(import.meta.url);
-const VERSION = "0.5.0";
+const VERSION = "0.5.1";
 
 function arg(name: string, fallback?: string): string | undefined {
   const index = process.argv.indexOf(name);

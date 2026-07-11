@@ -9,8 +9,8 @@ Find dashboard drift and produce evidence-backed, reviewable changes.
 
 ## Workflow
 
-1. Call `specdash.scan`, `specdash.validate`, and relevant `specdash.query` filters to establish current dashboard state.
-2. Inspect authoritative project evidence since the requested boundary: working-tree changes, commits, branches, tests, issues, PRs, releases, and configured source files.
+1. Call `specdash.scan`, `specdash.validate`, `specdash.reconcile`, and relevant `specdash.query` filters to establish current dashboard state. Pass the requested Git boundary to `specdash.reconcile` when one is available.
+2. Inspect the reconciliation suggestions and supplement them with authoritative project evidence: working-tree changes, commits, branches, tests, issues, PRs, releases, and configured source files.
 3. Classify each mismatch as:
    - mechanical drift: stale path, date, backlink, or regenerated index;
    - semantic drift: scope, behavior, acceptance criterion, decision, priority, or lifecycle state;

@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "--yes",
-        "--package=github:olegtyshcneko/spec-dashboard#v0.5.0",
+        "--package=github:olegtyshcneko/spec-dashboard#v0.5.1",
         "specdash-mcp",
         "--root",
         "."
