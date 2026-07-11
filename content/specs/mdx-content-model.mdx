@@ -1,0 +1,35 @@
+---
+schemaVersion: 1
+id: SPEC-002
+title: Versioned MDX content model
+summary: Make typed MDX frontmatter the canonical source for specs, plans, relationships, priorities, and project knowledge.
+kind: feature
+state: shipped
+priority: p0
+categories: [platform, documentation]
+tags: [mdx, schema]
+owners: []
+dependsOn: []
+related: [SPEC-001, KB-001]
+sourceRefs:
+  - type: file
+    value: packages/core/src/schema.ts
+created: 2026-07-11
+updated: 2026-07-11
+featured: true
+---
+
+## Intent
+
+Replace synchronized HTML, embedded JSON, and JavaScript manifests with one validated source document per entry.
+
+## Acceptance criteria
+
+- [x] Separate item kind from lifecycle state.
+- [x] Assign stable `SPEC-*` and `KB-*` identifiers.
+- [x] Validate categories and cross-entry references.
+- [x] Support Markdown and MDX bodies.
+
+## Out of scope
+
+Untrusted remote content is not executed as MDX. Importers must preserve it as escaped text.

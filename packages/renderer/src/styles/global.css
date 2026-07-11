@@ -1,0 +1,26 @@
+@import "../../../../assets/style.css";
+
+body {
+  min-height: 100vh;
+}
+
+.entry-body h1:first-child {
+  display: none;
+}
+
+.entry-body p,
+.entry-body li {
+  line-height: 1.7;
+}
+
+.entry-body pre {
+  overflow-x: auto;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+}
+
+.entry-body input[type="checkbox"] {
+  margin-right: 8px;
+}

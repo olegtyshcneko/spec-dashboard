@@ -1,0 +1,14 @@
+schemaVersion: 1
+project:
+  name: Spec Dashboard
+  tagline: Git-native specifications, plans, and project knowledge
+contentDir: content
+outputDir: dist
+base: /
+categories:
+  - id: platform
+    label: Platform
+  - id: documentation
+    label: Documentation
+  - id: experience
+    label: Experience

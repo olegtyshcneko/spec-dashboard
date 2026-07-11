@@ -1,0 +1,73 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const specs = (await getCollection("specs")).sort((a, b) => {
+  const stateOrder = ["active", "blocked", "review", "ready", "backlog", "idea", "shipped", "archived"];
+  const rank = stateOrder.indexOf(a.data.state) - stateOrder.indexOf(b.data.state);
+  return rank || b.data.updated.localeCompare(a.data.updated);
+});
+const clientSpecs = specs.map((entry) => ({ ...entry.data, href: `/specs/${entry.data.id}/` }));
+const states = [...new Set(specs.map((entry) => entry.data.state))];
+---
+<BaseLayout>
+  <main>
+    <div class="filters">
+      <input id="spec-search" type="search" placeholder="Search title, summary, category, or tag…" aria-label="Search specs" />
+      <div class="filter-chips" aria-label="Filter by state">
+        <button class="chip is-active" type="button" data-state="">All</button>
+        {states.map((state) => <button class="chip" type="button" data-state={state}>{state}</button>)}
+      </div>
+    </div>
+    <p id="spec-count" class="subtitle"></p>
+    <div id="spec-list" class="spec-list"></div>
+  </main>
+  <script define:vars={{ specs: clientSpecs }}>
+    const list = document.querySelector("#spec-list");
+    const count = document.querySelector("#spec-count");
+    const search = document.querySelector("#spec-search");
+    const chips = [...document.querySelectorAll("[data-state]")];
+    let activeState = "";
+
+    function render() {
+      const query = search.value.trim().toLowerCase();
+      const visible = specs.filter((spec) => {
+        if (activeState && spec.state !== activeState) return false;
+        const haystack = [spec.title, spec.summary, ...(spec.categories || []), ...(spec.tags || [])].join(" ").toLowerCase();
+        return !query || haystack.includes(query);
+      });
+      count.textContent = `${visible.length} of ${specs.length} specs`;
+      list.replaceChildren(...visible.map((spec) => {
+        const row = document.createElement("a");
+        row.className = "spec-row";
+        row.href = spec.href;
+        const pill = document.createElement("span");
+        pill.className = "pill";
+        pill.dataset.status = spec.state;
+        pill.textContent = spec.state;
+        const body = document.createElement("div");
+        body.className = "spec-row-body";
+        const title = document.createElement("div");
+        title.className = "spec-row-title";
+        title.textContent = `${spec.id} · ${spec.title}`;
+        const summary = document.createElement("div");
+        summary.className = "spec-row-summary";
+        summary.textContent = spec.summary;
+        body.append(title, summary);
+        const meta = document.createElement("div");
+        meta.className = "spec-row-meta";
+        meta.textContent = `${spec.priority} · ${spec.categories.join(", ")} · ${spec.updated}`;
+        row.append(pill, body, meta);
+        return row;
+      }));
+    }
+
+    search.addEventListener("input", render);
+    chips.forEach((chip) => chip.addEventListener("click", () => {
+      activeState = chip.dataset.state || "";
+      chips.forEach((candidate) => candidate.classList.toggle("is-active", candidate === chip));
+      render();
+    }));
+    render();
+  </script>
+</BaseLayout>

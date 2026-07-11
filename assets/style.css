@@ -627,6 +627,13 @@ code {
 .pill[data-status="backlog"]       { background: var(--s-backlog-bg);       color: var(--s-backlog-fg);       border-color: var(--s-backlog-border); }
 .pill[data-status="nice-to-have"]  { background: var(--s-nice-bg);          color: var(--s-nice-fg);          border-color: var(--s-nice-border); }
 .pill[data-status="known-issue"]   { background: var(--s-issue-bg);         color: var(--s-issue-fg);         border-color: var(--s-issue-border); }
+.pill[data-status="idea"]          { background: var(--s-nice-bg);          color: var(--s-nice-fg);          border-color: var(--s-nice-border); }
+.pill[data-status="ready"]         { background: var(--s-backlog-bg);       color: var(--s-backlog-fg);       border-color: var(--s-backlog-border); }
+.pill[data-status="active"]        { background: var(--s-wip-bg);           color: var(--s-wip-fg);           border-color: var(--s-wip-border); }
+.pill[data-status="blocked"]       { background: var(--s-issue-bg);         color: var(--s-issue-fg);         border-color: var(--s-issue-border); }
+.pill[data-status="review"]        { background: var(--s-nice-bg);          color: var(--s-nice-fg);          border-color: var(--s-nice-border); }
+.pill[data-status="shipped"]       { background: var(--s-implemented-bg);   color: var(--s-implemented-fg);   border-color: var(--s-implemented-border); }
+.pill[data-status="archived"]      { background: var(--surface-muted);      color: var(--text-faint);         border-color: var(--border); }
 
 /* ---------- Priority dots ---------- */
 .prio {

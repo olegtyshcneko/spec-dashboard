@@ -1,0 +1,14 @@
+{
+  "name": "@spec-dashboard/renderer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^7.0.2",
+    "@spec-dashboard/core": "0.1.0",
+    "astro": "^7.0.7"
+  }
+}

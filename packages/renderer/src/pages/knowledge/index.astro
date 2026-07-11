@@ -1,0 +1,20 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+const entries = (await getCollection("knowledge")).sort((a, b) => b.data.updated.localeCompare(a.data.updated));
+---
+<BaseLayout title="Knowledge base">
+  <main>
+    <h1>Knowledge base</h1>
+    <p class="summary">Research, decisions, architecture, glossaries, and runbooks that inform the project.</p>
+    <div class="card-grid">
+      {entries.map((entry) => (
+        <article class="card">
+          <h3><a href={`/knowledge/${entry.data.id}/`}>{entry.data.id} · {entry.data.title}</a></h3>
+          <p>{entry.data.summary}</p>
+          <div class="card-meta">{entry.data.kind} · {entry.data.updated}</div>
+        </article>
+      ))}
+    </div>
+  </main>
+</BaseLayout>

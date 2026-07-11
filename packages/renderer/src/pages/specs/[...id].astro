@@ -1,0 +1,27 @@
+---
+import { getCollection, render } from "astro:content";
+import EntryMeta from "../../components/EntryMeta.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+export async function getStaticPaths() {
+  return (await getCollection("specs")).map((entry) => ({ params: { id: entry.data.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+---
+<BaseLayout title={entry.data.title}>
+  <article class="detail">
+    <div class="crumb"><a href="/">← Dashboard</a></div>
+    <header>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span class="pill" data-status={entry.data.state}>{entry.data.state}</span>
+        <span class="prio" data-prio={entry.data.priority} title={`Priority ${entry.data.priority}`}></span>
+      </div>
+      <h1>{entry.data.title}</h1>
+      <p class="summary">{entry.data.summary}</p>
+      <EntryMeta data={entry.data} />
+    </header>
+    <div class="entry-body"><Content /></div>
+  </article>
+</BaseLayout>

@@ -1,0 +1,37 @@
+---
+schemaVersion: 1
+id: KB-001
+title: Compiler-first project architecture
+summary: The dashboard is a deterministic content compiler whose static renderer, CLI, MCP server, and skills all share one project model.
+kind: architecture
+categories: [platform]
+tags: [architecture, source-of-truth]
+authors: []
+sources:
+  - docs/DASHBOARD_SPEC.md
+related: [SPEC-001, SPEC-002]
+sourceRefs:
+  - type: file
+    value: packages/core
+created: 2026-07-11
+updated: 2026-07-11
+featured: true
+---
+
+## Principle
+
+MDX frontmatter and body content are canonical. Generated HTML, JSON indexes, MCP resources, and diagnostics are projections of the same validated model.
+
+## Data flow
+
+```text
+project evidence + MDX content
+          ↓
+ scan → validate → project graph
+          ↓
+ static site | CLI | MCP | CI diagnostics
+```
+
+## Boundary
+
+The core and renderer are deterministic. Agent skills make judgment-heavy proposals, while the MCP server exposes controlled operations over the same core.

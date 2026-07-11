@@ -1,0 +1,21 @@
+{
+  "name": "spec-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Git-native MDX spec and planning dashboard compiler",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build:packages": "npm run build -w @spec-dashboard/core && npm run build -w @spec-dashboard/cli",
+    "build": "npm run build:packages && node packages/cli/dist/index.js build --root .",
+    "dev": "npm run build:packages && node packages/cli/dist/index.js dev --root .",
+    "validate": "npm run build:packages && node packages/cli/dist/index.js validate --root .",
+    "test": "npm run build:packages && npm run test -w @spec-dashboard/core"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

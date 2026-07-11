@@ -1,0 +1,19 @@
+---
+interface Props {
+  data: Record<string, unknown>;
+}
+
+const { data } = Astro.props;
+const rows = [
+  ["ID", data.id],
+  ["Kind", data.kind],
+  ["State", data.state],
+  ["Priority", data.priority],
+  ["Owners", Array.isArray(data.owners) ? data.owners.join(", ") || "Unassigned" : undefined],
+  ["Categories", Array.isArray(data.categories) ? data.categories.join(", ") : undefined],
+  ["Updated", data.updated],
+].filter(([, value]) => value != null);
+---
+<dl class="spec-meta">
+  {rows.map(([label, value]) => <><dt>{label}</dt><dd>{String(value)}</dd></>)}
+</dl>

@@ -1,0 +1,23 @@
+---
+import { getCollection, render } from "astro:content";
+import EntryMeta from "../../components/EntryMeta.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+export async function getStaticPaths() {
+  return (await getCollection("knowledge")).map((entry) => ({ params: { id: entry.data.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+---
+<BaseLayout title={entry.data.title}>
+  <article class="detail">
+    <div class="crumb"><a href="/knowledge/">← Knowledge base</a></div>
+    <header>
+      <h1>{entry.data.title}</h1>
+      <p class="summary">{entry.data.summary}</p>
+      <EntryMeta data={entry.data} />
+    </header>
+    <div class="entry-body"><Content /></div>
+  </article>
+</BaseLayout>

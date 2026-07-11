@@ -1,0 +1,35 @@
+---
+schemaVersion: 1
+id: SPEC-001
+title: Portable static dashboard output
+summary: Generate a dependency-free HTML dashboard that can be hosted on GitHub Pages, S3, or any static file server.
+kind: feature
+state: shipped
+priority: p0
+categories: [platform]
+tags: [static-site, publishing]
+owners: []
+dependsOn: []
+related: [KB-001]
+sourceRefs:
+  - type: file
+    value: packages/renderer
+created: 2026-05-11
+updated: 2026-07-11
+featured: true
+---
+
+## Intent
+
+Keep the dashboard portable for readers while moving authoring and validation to a build-time compiler.
+
+## Acceptance criteria
+
+- [x] Produce plain HTML, CSS, JavaScript, and JSON.
+- [x] Require no application server at runtime.
+- [x] Generate a page for every specification and knowledge entry.
+- [x] Fail before rendering when content violates the schema.
+
+## Decisions
+
+The project uses Astro only at build time. Generated output remains host-agnostic.
