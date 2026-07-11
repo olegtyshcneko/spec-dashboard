@@ -1,47 +1,47 @@
-/* Przypadky Feature Dashboard — shared styles
-   No framework. No build step. Open index.html via file:// or any static server. */
+/* Spec Dashboard — shared dark theme. */
 
 :root {
-  --bg: #faf7f0;
-  --surface: #fffdf6;
-  --surface-muted: #f3efe4;
-  --border: #e6dfcc;
-  --border-strong: #c9bf9f;
-  --text: #1a1916;
-  --text-muted: #5b574c;
-  --text-faint: #8a8678;
-  --accent: #b91c1c;
-  --accent-hover: #7f1d1d;
-  --gold: #d97706;
+  color-scheme: dark;
+  --bg: #090d12;
+  --surface: #111820;
+  --surface-muted: #17212b;
+  --border: #263342;
+  --border-strong: #3a4b5e;
+  --text: #edf3f8;
+  --text-muted: #a9b6c4;
+  --text-faint: #7d8c9e;
+  --accent: #fb7185;
+  --accent-hover: #fda4af;
+  --gold: #fbbf24;
   --gold-soft: #f59e0b;
-  --gold-bright: #fcd34d;
-  --ink-deep: #15130f;
+  --gold-bright: #fde68a;
+  --ink-deep: #06090d;
 
   /* Status palette — same five colors used everywhere. */
-  --s-implemented-bg: #dcfce7;
-  --s-implemented-fg: #14532d;
-  --s-implemented-border: #86efac;
+  --s-implemented-bg: #0d2e24;
+  --s-implemented-fg: #86efac;
+  --s-implemented-border: #287158;
 
-  --s-wip-bg: #fef3c7;
-  --s-wip-fg: #78350f;
-  --s-wip-border: #fcd34d;
+  --s-wip-bg: #35250b;
+  --s-wip-fg: #fcd34d;
+  --s-wip-border: #8a621c;
 
-  --s-backlog-bg: #dbeafe;
-  --s-backlog-fg: #1e3a8a;
-  --s-backlog-border: #93c5fd;
+  --s-backlog-bg: #112b46;
+  --s-backlog-fg: #93c5fd;
+  --s-backlog-border: #32658f;
 
-  --s-nice-bg: #ede9fe;
-  --s-nice-fg: #4c1d95;
-  --s-nice-border: #c4b5fd;
+  --s-nice-bg: #281c45;
+  --s-nice-fg: #c4b5fd;
+  --s-nice-border: #684ca2;
 
-  --s-issue-bg: #fee2e2;
-  --s-issue-fg: #7f1d1d;
-  --s-issue-border: #fca5a5;
+  --s-issue-bg: #3a171c;
+  --s-issue-fg: #fca5a5;
+  --s-issue-border: #913b48;
 
   --radius: 10px;
   --radius-sm: 6px;
-  --shadow-sm: 0 1px 2px rgba(20, 16, 8, 0.04), 0 1px 1px rgba(20, 16, 8, 0.03);
-  --shadow-md: 0 4px 12px rgba(20, 16, 8, 0.06), 0 2px 4px rgba(20, 16, 8, 0.04);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.38), 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.32), 0 3px 8px rgba(0, 0, 0, 0.24);
 
   --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
@@ -59,6 +59,15 @@ html, body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
+
+body {
+  background-image:
+    radial-gradient(circle at 12% -10%, rgba(251, 191, 36, 0.07), transparent 32rem),
+    radial-gradient(circle at 92% 8%, rgba(251, 113, 133, 0.055), transparent 28rem);
+  background-attachment: fixed;
+}
+
+::selection { color: var(--ink-deep); background: var(--gold-bright); }
 
 a {
   color: var(--accent);
@@ -128,15 +137,13 @@ code {
   position: relative;
   margin: 0 0 36px;
   padding: 36px 40px 32px;
-  /* Same family as the rest of the dashboard surfaces, only a hair warmer
-     and shifted so the hero reads as "framed" without inverting into dark mode. */
   background:
-    radial-gradient(80% 120% at 100% 0%, rgba(252, 211, 77, 0.18), transparent 60%),
-    linear-gradient(180deg, #fcf7e8 0%, var(--surface) 100%);
+    radial-gradient(80% 120% at 100% 0%, rgba(251, 191, 36, 0.12), transparent 60%),
+    linear-gradient(180deg, #18180f 0%, var(--surface) 100%);
   border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 8px 20px -14px rgba(217, 119, 6, 0.4), 0 2px 4px rgba(20, 16, 8, 0.05);
+  box-shadow: 0 16px 36px -22px rgba(251, 191, 36, 0.38), var(--shadow-sm);
 }
 .kb-hero::before {
   /* Bold warm strip on top — the same gold→red ribbon, reading bright against cream */
@@ -216,7 +223,7 @@ code {
   border-color: var(--gold);
   text-decoration: none;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px -10px rgba(217, 119, 6, 0.3), 0 2px 4px rgba(20, 16, 8, 0.06);
+  box-shadow: 0 12px 28px -14px rgba(251, 191, 36, 0.26), var(--shadow-sm);
 }
 .kb-entry-card .kb-entry-title {
   display: flex;
@@ -298,8 +305,10 @@ code {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   font: inherit;
+  color: var(--text);
   background: var(--bg);
 }
+.filters input[type="search"]::placeholder { color: var(--text-faint); }
 .filters input[type="search"]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {
@@ -323,7 +332,7 @@ code {
 .rail {
   margin-bottom: 32px;
   padding: 16px 18px;
-  background: linear-gradient(180deg, #fffdf6 0%, var(--surface) 100%);
+  background: linear-gradient(180deg, var(--surface-muted) 0%, var(--surface) 100%);
   border: 1px solid var(--border);
   border-left: 3px solid var(--gold);
   border-radius: var(--radius);
@@ -566,7 +575,7 @@ code {
 }
 .card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px -8px rgba(217, 119, 6, 0.25), 0 2px 4px rgba(20, 16, 8, 0.06);
+  box-shadow: 0 12px 28px -16px rgba(251, 191, 36, 0.28), var(--shadow-sm);
   border-color: var(--gold);
 }
 .card-top {
@@ -781,7 +790,20 @@ footer.detail-foot {
 
 /* ---------- Print ---------- */
 @media print {
-  body { background: white; }
+  :root {
+    color-scheme: light;
+    --bg: #fff;
+    --surface: #fff;
+    --surface-muted: #f5f5f5;
+    --border: #ddd;
+    --border-strong: #bbb;
+    --text: #171717;
+    --text-muted: #525252;
+    --text-faint: #737373;
+    --accent: #9f1239;
+    --accent-hover: #881337;
+  }
+  body { background: white; background-image: none; }
   .filters, .site-header nav, footer.detail-foot { display: none; }
   .card, .rail, .spec-meta, .story, details.decision { box-shadow: none; border-color: #ddd; }
 }
