@@ -276,10 +276,10 @@ body {
 .map-node:focus rect { fill: var(--surface-muted); stroke: var(--gold); stroke-width: 2; }
 .map-node:focus { outline: none; }
 .map-node.is-muted { opacity: 0.2; }
-.map-node-id { fill: var(--accent); font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; }
+.map-node-id { fill: var(--accent); font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; }
 .map-node-knowledge .map-node-id { fill: var(--gold); }
-.map-node-title { fill: var(--text); font-size: 14px; font-weight: 700; }
-.map-node-meta { fill: var(--text-faint); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+.map-node-title { fill: var(--text); font-size: 13px; font-weight: 680; }
+.map-node-meta { fill: var(--text-faint); font-size: 9px; text-transform: uppercase; letter-spacing: 0.035em; }
 .graph-hint { margin: 10px 2px 28px; color: var(--text-faint); font-size: 12px; }
 
 .graph-list-panel {

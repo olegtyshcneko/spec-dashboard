@@ -28,24 +28,54 @@ for (const entry of entries) {
 for (const column of columns.values()) column.sort((left, right) => left.id.localeCompare(right.id));
 
 const nodeWidth = 220;
-const nodeHeight = 82;
 const columnGap = 96;
 const rowGap = 42;
 const paddingX = 54;
 const paddingY = 54;
-const maxDepth = Math.max(0, ...columns.keys());
-const maxRows = Math.max(1, ...[...columns.values()].map((column) => column.length));
-const graphWidth = Math.max(760, paddingX * 2 + (maxDepth + 1) * nodeWidth + maxDepth * columnGap);
-const graphHeight = Math.max(400, paddingY * 2 + maxRows * nodeHeight + (maxRows - 1) * rowGap);
+const titleY = 47;
+const titleLineHeight = 17;
+const metaLineHeight = 12;
 
-const positions = new Map<string, { x: number; y: number }>();
+function wrapText(value: string, maxCharacters: number): string[] {
+  const lines: string[] = [];
+  let current = "";
+  for (const word of value.trim().split(/\s+/)) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (current && candidate.length > maxCharacters) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.length > 0 ? lines : [value];
+}
+
+const nodePresentation = new Map(entries.map((entry) => {
+  const state = "state" in entry.data ? entry.data.state : "knowledge";
+  const titleLines = wrapText(entry.data.title, 25);
+  const metaLines = wrapText(`${state} · ${entry.data.categories.join(", ")}`, 35);
+  const metaY = titleY + (titleLines.length - 1) * titleLineHeight + 22;
+  const height = metaY + (metaLines.length - 1) * metaLineHeight + 17;
+  return [entry.id, { state, titleLines, metaLines, metaY, height }];
+}));
+
+const maxDepth = Math.max(0, ...columns.keys());
+const graphWidth = Math.max(760, paddingX * 2 + (maxDepth + 1) * nodeWidth + maxDepth * columnGap);
+const columnHeights = [...columns.values()].map((column) => column.reduce((total, entry) => total + nodePresentation.get(entry.id)!.height, 0) + Math.max(0, column.length - 1) * rowGap);
+const graphHeight = Math.max(400, paddingY * 2 + Math.max(0, ...columnHeights));
+
+const positions = new Map<string, { x: number; y: number; height: number }>();
 for (const [depth, column] of columns) {
-  const occupiedHeight = column.length * nodeHeight + Math.max(0, column.length - 1) * rowGap;
+  const occupiedHeight = column.reduce((total, entry) => total + nodePresentation.get(entry.id)!.height, 0) + Math.max(0, column.length - 1) * rowGap;
   const startY = (graphHeight - occupiedHeight) / 2;
-  column.forEach((entry, index) => positions.set(entry.id, {
-    x: paddingX + depth * (nodeWidth + columnGap),
-    y: startY + index * (nodeHeight + rowGap),
-  }));
+  let y = startY;
+  for (const entry of column) {
+    const height = nodePresentation.get(entry.id)!.height;
+    positions.set(entry.id, { x: paddingX + depth * (nodeWidth + columnGap), y, height });
+    y += height + rowGap;
+  }
 }
 
 type VisualEdge = { from: string; to: string; type: "depends-on" | "related" };
@@ -73,19 +103,15 @@ function edgePath(edge: VisualEdge): string {
     const anchorX = from.x + (routeLeft ? 0 : nodeWidth);
     const curveOffset = 46 + Math.abs(to.y - from.y) * 0.16;
     const controlX = routeLeft ? Math.max(12, anchorX - curveOffset) : Math.min(graphWidth - 12, anchorX + curveOffset);
-    return `M ${anchorX} ${from.y + nodeHeight / 2} C ${controlX} ${from.y + nodeHeight / 2}, ${controlX} ${to.y + nodeHeight / 2}, ${anchorX} ${to.y + nodeHeight / 2}`;
+    return `M ${anchorX} ${from.y + from.height / 2} C ${controlX} ${from.y + from.height / 2}, ${controlX} ${to.y + to.height / 2}, ${anchorX} ${to.y + to.height / 2}`;
   }
   const leftToRight = to.x >= from.x;
   const startX = from.x + (leftToRight ? nodeWidth : 0);
   const endX = to.x + (leftToRight ? 0 : nodeWidth);
-  const startY = from.y + nodeHeight / 2;
-  const endY = to.y + nodeHeight / 2;
+  const startY = from.y + from.height / 2;
+  const endY = to.y + to.height / 2;
   const bend = Math.max(48, Math.abs(endX - startX) * 0.45);
   return `M ${startX} ${startY} C ${startX + (leftToRight ? bend : -bend)} ${startY}, ${endX - (leftToRight ? bend : -bend)} ${endY}, ${endX} ${endY}`;
-}
-
-function shortTitle(value: string): string {
-  return value.length > 29 ? `${value.slice(0, 27)}…` : value;
 }
 
 const categories = [...new Set(entries.flatMap((entry) => entry.data.categories))].sort();
@@ -196,7 +222,7 @@ const defaultView = entries.length > 80 ? "list" : "map";
             {entries.map((entry) => {
               const position = positions.get(entry.id)!;
               const isKnowledge = entry.id.startsWith("KB-");
-              const state = "state" in entry.data ? entry.data.state : "knowledge";
+              const presentation = nodePresentation.get(entry.id)!;
               return (
                 <a href={href(entry.id)} class="map-node-link" aria-label={`${entry.id}: ${entry.data.title}`}>
                   <g
@@ -205,14 +231,19 @@ const defaultView = entries.length > 80 ? "list" : "map";
                     data-node-id={entry.id}
                     data-depth={dependencyDepth(entry.id)}
                     data-categories={entry.data.categories.join(" ")}
-                    data-state={state}
+                    data-state={presentation.state}
+                    data-height={presentation.height}
                     tabindex="0"
                   >
                     <title>{entry.id} · {entry.data.title}</title>
-                    <rect width={nodeWidth} height={nodeHeight} rx="12" filter="url(#node-shadow)"></rect>
+                    <rect width={nodeWidth} height={presentation.height} rx="12" filter="url(#node-shadow)"></rect>
                     <text class="map-node-id" x="16" y="23">{entry.id}</text>
-                    <text class="map-node-title" x="16" y="47">{shortTitle(entry.data.title)}</text>
-                    <text class="map-node-meta" x="16" y="68">{state} · {entry.data.categories.join(", ")}</text>
+                    <text class="map-node-title" x="16" y={titleY}>
+                      {presentation.titleLines.map((line, index) => <tspan x="16" dy={index === 0 ? 0 : titleLineHeight}>{line}</tspan>)}
+                    </text>
+                    <text class="map-node-meta" x="16" y={presentation.metaY}>
+                      {presentation.metaLines.map((line, index) => <tspan x="16" dy={index === 0 ? 0 : metaLineHeight}>{line}</tspan>)}
+                    </text>
                   </g>
                 </a>
               );
@@ -260,7 +291,6 @@ const defaultView = entries.length > 80 ? "list" : "map";
     const params = new URLSearchParams(location.search);
     const adjacency = new Map(nodes.map((node) => [node.dataset.nodeId, new Set()]));
     const NODE_WIDTH = 220;
-    const NODE_HEIGHT = 82;
     const COLUMN_GAP = 96;
     const ROW_GAP = 42;
     const PADDING_X = 54;
@@ -316,13 +346,13 @@ const defaultView = entries.length > 80 ? "list" : "map";
         const anchorX = from.x + (routeLeft ? 0 : NODE_WIDTH);
         const offset = 46 + Math.abs(to.y - from.y) * 0.16;
         const controlX = routeLeft ? Math.max(12, anchorX - offset) : Math.min(width - 12, anchorX + offset);
-        return `M ${anchorX} ${from.y + NODE_HEIGHT / 2} C ${controlX} ${from.y + NODE_HEIGHT / 2}, ${controlX} ${to.y + NODE_HEIGHT / 2}, ${anchorX} ${to.y + NODE_HEIGHT / 2}`;
+        return `M ${anchorX} ${from.y + from.height / 2} C ${controlX} ${from.y + from.height / 2}, ${controlX} ${to.y + to.height / 2}, ${anchorX} ${to.y + to.height / 2}`;
       }
       const leftToRight = to.x >= from.x;
       const startX = from.x + (leftToRight ? NODE_WIDTH : 0);
       const endX = to.x + (leftToRight ? 0 : NODE_WIDTH);
-      const startY = from.y + NODE_HEIGHT / 2;
-      const endY = to.y + NODE_HEIGHT / 2;
+      const startY = from.y + from.height / 2;
+      const endY = to.y + to.height / 2;
       const bend = Math.max(48, Math.abs(endX - startX) * 0.45);
       return `M ${startX} ${startY} C ${startX + (leftToRight ? bend : -bend)} ${startY}, ${endX - (leftToRight ? bend : -bend)} ${endY}, ${endX} ${endY}`;
     }
@@ -332,19 +362,22 @@ const defaultView = entries.length > 80 ? "list" : "map";
       const depths = [...new Set(visibleNodes.map((node) => Number(node.dataset.depth)))].sort((left, right) => left - right);
       const depthIndex = new Map(depths.map((depth, index) => [depth, index]));
       const columns = new Map(depths.map((depth) => [depth, visibleNodes.filter((node) => Number(node.dataset.depth) === depth).sort((left, right) => left.dataset.nodeId.localeCompare(right.dataset.nodeId))]));
-      const maxRows = Math.max(1, ...[...columns.values()].map((column) => column.length));
       const width = Math.max(760, PADDING_X * 2 + Math.max(1, depths.length) * NODE_WIDTH + Math.max(0, depths.length - 1) * COLUMN_GAP);
-      const height = Math.max(320, PADDING_Y * 2 + maxRows * NODE_HEIGHT + Math.max(0, maxRows - 1) * ROW_GAP);
+      const columnHeights = [...columns.values()].map((column) => column.reduce((total, node) => total + Number(node.dataset.height), 0) + Math.max(0, column.length - 1) * ROW_GAP);
+      const height = Math.max(320, PADDING_Y * 2 + Math.max(0, ...columnHeights));
       const positions = new Map();
 
       for (const [depth, column] of columns) {
-        const occupied = column.length * NODE_HEIGHT + Math.max(0, column.length - 1) * ROW_GAP;
+        const occupied = column.reduce((total, node) => total + Number(node.dataset.height), 0) + Math.max(0, column.length - 1) * ROW_GAP;
         const startY = (height - occupied) / 2;
-        column.forEach((node, index) => {
-          const position = { x: PADDING_X + depthIndex.get(depth) * (NODE_WIDTH + COLUMN_GAP), y: startY + index * (NODE_HEIGHT + ROW_GAP) };
+        let y = startY;
+        for (const node of column) {
+          const nodeHeight = Number(node.dataset.height);
+          const position = { x: PADDING_X + depthIndex.get(depth) * (NODE_WIDTH + COLUMN_GAP), y, height: nodeHeight };
           positions.set(node.dataset.nodeId, position);
           node.setAttribute("transform", `translate(${position.x} ${position.y})`);
-        });
+          y += nodeHeight + ROW_GAP;
+        }
       }
 
       for (const node of nodes) node.style.display = visible.has(node.dataset.nodeId) ? "" : "none";
