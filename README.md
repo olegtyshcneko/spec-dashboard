@@ -55,6 +55,24 @@ The generated site includes:
 
 Quality gates are state-aware. Active work needs an owner, next action, and acceptance criteria; blocked work must name its blockers; shipped work must retain source evidence. `quality.staleAfterDays` controls freshness warnings.
 
+## MCP server
+
+Build and start the project-scoped stdio server:
+
+```sh
+npm run mcp
+```
+
+Or launch it for another initialized project:
+
+```sh
+node packages/mcp/dist/index.js --root /path/to/project
+```
+
+The server exposes project summary, graph, diagnostics, and item resources. Tools cover validation, content queries, project scans, hash-bound change previews, lifecycle transition previews, reviewed change application, and static builds.
+
+Writes are restricted to Markdown and MDX files under the configured content directory. Applying a change requires the revision returned by its preview; concurrent or invalid changes are rejected and invalid writes are rolled back.
+
 ## Content model
 
 Specification frontmatter separates lifecycle from kind and priority:

@@ -4,17 +4,16 @@ id: SPEC-004
 title: Scoped project MCP server
 summary: Expose validated project resources and safe preview-first mutations through a local stdio MCP server.
 kind: feature
-state: active
+state: shipped
 priority: p0
 categories: [platform]
 tags: [mcp, automation]
 owners: [maintainer]
-nextAction: Expose the released project snapshot and validation operations through stdio MCP.
 dependsOn: [SPEC-002, SPEC-003]
 related: []
 sourceRefs:
   - type: file
-    value: packages/core/src/project.ts
+    value: packages/mcp/src/server.ts
 created: 2026-07-11
 updated: 2026-07-11
 featured: false
@@ -22,7 +21,7 @@ featured: false
 
 ## Acceptance criteria
 
-- [ ] Scope all reads and writes to one configured project root.
-- [ ] Expose project summary, entries, graph, and diagnostics as resources.
-- [ ] Provide scan, validate, preview, apply, transition, and build tools.
-- [ ] Use structured outputs and preview-first write semantics.
+- [x] Scope all reads and writes to one configured project root.
+- [x] Expose project summary, entries, graph, and diagnostics as resources.
+- [x] Provide scan, validate, preview, apply, transition, and build tools.
+- [x] Use structured outputs and preview-first write semantics.

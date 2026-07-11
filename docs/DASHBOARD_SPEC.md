@@ -44,3 +44,9 @@ The renderer produces:
 - `/project.json` as the machine-readable static projection.
 
 The site remains static and backend-free after compilation.
+
+## MCP contract
+
+The local stdio server exposes the same core model through `specdash://` resources. Read-only tools validate, query, scan, and preview. Write tools require a preview ID plus the expected content revision, perform atomic writes inside the configured content root, and roll back changes that introduce validation errors.
+
+Lifecycle transitions follow an explicit state machine. A transition preview fails when the requested edge is not allowed; semantic state changes are never inferred or silently applied.

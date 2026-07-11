@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { loadProject } from "../dist/index.js";
+import { assertTransition, loadProject } from "../dist/index.js";
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "specdash-core-"));
@@ -124,4 +124,9 @@ updated: 2026-07-01
   assert.deepEqual(project.edges, [{ from: "SPEC-002", to: "SPEC-001", type: "depends-on" }]);
   assert.equal(project.specs.find((entry) => entry.id === "SPEC-002").analysis.tasks.done, 1);
   assert.ok(project.diagnostics.some((diagnostic) => diagnostic.code === "missing-owner"));
+});
+
+test("enforces explicit lifecycle transitions", () => {
+  assert.doesNotThrow(() => assertTransition("review", "shipped"));
+  assert.throws(() => assertTransition("backlog", "shipped"), /Invalid lifecycle transition/);
 });
