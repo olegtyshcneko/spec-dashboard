@@ -17,8 +17,37 @@ Every entry has versioned frontmatter. The core validates schema, category, ID, 
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 22.12 or newer
 - npm 10 or newer
+
+## Documentation
+
+- [User guide](docs/USER_GUIDE.md) — install, bootstrap, daily workflow, lifecycle, reconciliation, and publishing.
+- [MCP reference](docs/MCP_REFERENCE.md) — resources, tools, inputs, outputs, safety guarantees, and diagnostics.
+- [Automation guide](docs/AUTOMATION.md) — target-project validation, reconciliation, GitHub Pages, and repository guidance.
+- [Troubleshooting](docs/TROUBLESHOOTING.md) — installation, MCP, validation, preview, build, graph, and deployment failures.
+- [Architecture and content contract](docs/DASHBOARD_SPEC.md) — implementation boundaries and source-of-truth rules.
+
+## Five-minute Codex quickstart
+
+Install the versioned marketplace and plugin:
+
+```sh
+codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.5.1
+codex plugin add spec-dashboard@spec-dashboard
+```
+
+Open the repository you want to document as the active Codex project, then ask:
+
+> Use `$bootstrap-spec-dashboard` to inspect this project and create a reviewed dashboard baseline. Show the proposed categories and initialization preview before applying anything.
+
+After approval, the workflow creates `specdash.config.yaml`, canonical MDX under `content/`, validates it, and builds the static dashboard. Continue with prompts such as:
+
+- “Use `$capture-spec-work` to capture issue #42 as a backlog specification.”
+- “Use `$review-spec-quality` to review all ready and active work without editing.”
+- “Use `$reconcile-spec-dashboard` to compare documentation with changes since `origin/main`.”
+
+Read the [user guide](docs/USER_GUIDE.md) before rolling the workflow out to a team.
 
 ## Use this repository
 
@@ -51,6 +80,7 @@ The generated site includes:
 - URL-backed filtering by text, state, kind, priority, category, and owner;
 - task progress derived from Markdown checklists;
 - dependency, related-entry, and backlink views;
+- a graphical Map/List relationship explorer with category, lifecycle, neighborhood, and zoom controls;
 - a health page for schema and readiness diagnostics;
 - a knowledge index connected to the work it informs.
 
@@ -76,13 +106,6 @@ Writes are restricted to Markdown and MDX files under the configured content dir
 
 ## Codex plugin
 
-Install the versioned repository marketplace and plugin:
-
-```sh
-codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.5.1
-codex plugin add spec-dashboard@spec-dashboard
-```
-
 The plugin bundles the project-scoped MCP configuration and four workflows:
 
 - `bootstrap-spec-dashboard` initializes a reviewed project baseline;
@@ -90,7 +113,7 @@ The plugin bundles the project-scoped MCP configuration and four workflows:
 - `reconcile-spec-dashboard` finds drift and previews fixes;
 - `review-spec-quality` critiques readiness, evidence, scope, and testability.
 
-The MCP launch is pinned to the same GitHub release tag. Its first start uses `npx` to install the tagged compiler package and then runs `specdash-mcp` against the active project root.
+The MCP launch is pinned to the same GitHub release tag. Its first start uses `npx` to install the tagged compiler package and then runs `specdash-mcp` against the active project root. Installation and the complete operating model are covered in the [user guide](docs/USER_GUIDE.md).
 
 ## Content model
 
@@ -130,7 +153,7 @@ Knowledge entries use stable `KB-*` IDs and kinds such as `research`, `adr`, `ar
 
 `specdash reconcile` compares configured file evidence with a Git boundary and reports changed sources, missing paths, documentation older than its implementation evidence, and possible lifecycle transitions. Suggestions include evidence and confidence but never mutate content; transitions still require an explicit preview and apply flow.
 
-The included GitHub Actions workflows validate, test, reconcile, and build on pull requests and `main`. A separate Pages workflow builds with the correct repository subpath and deploys the static artifact through GitHub Pages.
+This repository's GitHub Actions workflows validate, test, reconcile, and build on pull requests and `main`. A separate Pages workflow builds with the correct repository subpath and deploys the static artifact. These files are not installed automatically into another project; use the [automation guide](docs/AUTOMATION.md) to configure a target repository.
 
 ## Runtime model
 

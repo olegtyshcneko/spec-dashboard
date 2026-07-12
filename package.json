@@ -12,6 +12,7 @@
   "files": [
     ".agents/**",
     "assets/**",
+    "docs/**",
     "packages/**",
     "plugins/**",
     "README.md",
@@ -33,7 +34,7 @@
     "prepare": "npm run build:packages"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12.0"
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.2",

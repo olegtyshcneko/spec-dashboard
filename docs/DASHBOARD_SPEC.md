@@ -1,5 +1,7 @@
 # Dashboard compiler contract
 
+This document defines implementation and content contracts for maintainers. New users should begin with the [user guide](USER_GUIDE.md). Operational details live in the [MCP reference](MCP_REFERENCE.md), [automation guide](AUTOMATION.md), and [troubleshooting guide](TROUBLESHOOTING.md).
+
 ## Canonical sources
 
 - `specdash.config.yaml` defines project paths and categories.
