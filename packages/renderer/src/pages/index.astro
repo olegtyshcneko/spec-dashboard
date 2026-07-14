@@ -47,9 +47,10 @@ const serialized = JSON.stringify(snapshot).replace(/</g, "\\u003c");
     <section aria-labelledby="work-title">
       <div class="section-title-row"><h2 id="work-title">Work items</h2><p id="spec-count" class="subtitle"></p></div>
       <div class="filters intelligence-filters">
-        <input id="spec-search" type="search" placeholder="Search title, summary, category, owner, or tag…" aria-label="Search specs" />
+        <input id="spec-search" type="search" placeholder="Search title, summary, milestone, category, owner, or tag…" aria-label="Search specs" />
         <select id="kind-filter" aria-label="Filter by kind"><option value="">All kinds</option></select>
         <select id="priority-filter" aria-label="Filter by priority"><option value="">All priorities</option></select>
+        <select id="milestone-filter" aria-label="Filter by milestone"><option value="">All milestones</option></select>
         <select id="category-filter" aria-label="Filter by category"><option value="">All categories</option></select>
         <select id="owner-filter" aria-label="Filter by owner"><option value="">All owners</option></select>
         <button id="clear-filters" class="chip" type="button">Clear</button>
@@ -69,6 +70,7 @@ const serialized = JSON.stringify(snapshot).replace(/</g, "\\u003c");
     const selects = {
       kind: document.querySelector("#kind-filter"),
       priority: document.querySelector("#priority-filter"),
+      milestone: document.querySelector("#milestone-filter"),
       category: document.querySelector("#category-filter"),
       owner: document.querySelector("#owner-filter"),
     };
@@ -85,6 +87,8 @@ const serialized = JSON.stringify(snapshot).replace(/</g, "\\u003c");
     }
     fill(selects.kind, "kind");
     fill(selects.priority, "priority");
+    for (const milestone of project.milestones) selects.milestone.add(new Option(milestone.label, milestone.id));
+    selects.milestone.value = params.get("milestone") || "";
     fill(selects.category, "categories");
     fill(selects.owner, "owners");
     search.value = params.get("q") || "";
@@ -140,7 +144,8 @@ const serialized = JSON.stringify(snapshot).replace(/</g, "\\u003c");
       const meta = document.createElement("div");
       meta.className = "spec-row-meta rich-meta";
       const progress = spec.analysis.tasks.total ? `${spec.analysis.tasks.done}/${spec.analysis.tasks.total} tasks` : "no tasks";
-      meta.textContent = `${spec.kind} · ${spec.priority} · ${spec.categories.join(", ")} · ${progress} · ${spec.updated}`;
+      const milestone = spec.milestone ? project.milestones.find((candidate) => candidate.id === spec.milestone)?.label || spec.milestone : "unscheduled";
+      meta.textContent = `${spec.kind} · ${spec.priority} · ${milestone} · ${spec.categories.join(", ")} · ${progress} · ${spec.updated}`;
       row.append(pill, body, meta);
       return row;
     }
@@ -150,9 +155,11 @@ const serialized = JSON.stringify(snapshot).replace(/</g, "\\u003c");
         if (activeState && spec.state !== activeState) return false;
         if (!selected(spec, "kind", selects.kind.value)) return false;
         if (!selected(spec, "priority", selects.priority.value)) return false;
+        if (!selected(spec, "milestone", selects.milestone.value)) return false;
         if (!selected(spec, "categories", selects.category.value)) return false;
         if (!selected(spec, "owners", selects.owner.value)) return false;
-        const haystack = [spec.id, spec.title, spec.summary, spec.nextAction || "", ...(spec.categories || []), ...(spec.tags || []), ...(spec.owners || [])].join(" ").toLowerCase();
+        const milestoneLabel = project.milestones.find((candidate) => candidate.id === spec.milestone)?.label || "";
+        const haystack = [spec.id, spec.title, spec.summary, spec.nextAction || "", spec.milestone || "", milestoneLabel, ...(spec.categories || []), ...(spec.tags || []), ...(spec.owners || [])].join(" ").toLowerCase();
         return !query || haystack.includes(query);
       });
       count.textContent = `${visible.length} of ${specs.length} specs`;

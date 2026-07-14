@@ -1,0 +1,57 @@
+---
+schemaVersion: 1
+id: SPEC-007
+title: Milestone roadmap planning
+summary: Group work into validated delivery milestones and render a static roadmap alongside the operational dashboard.
+kind: feature
+state: shipped
+priority: p1
+milestone: next-release
+categories: [experience, platform]
+tags: [milestones, roadmap, planning]
+owners: [maintainer]
+dependsOn: [SPEC-002, SPEC-003]
+related: []
+sourceRefs:
+  - type: file
+    value: packages/core/src/schema.ts
+  - type: file
+    value: packages/renderer/src/pages/index.astro
+  - type: file
+    value: packages/renderer/src/pages/roadmap/index.astro
+    label: Milestone roadmap implementation
+  - type: url
+    value: https://github.com/olegtyshcneko/spec-dashboard/tree/v0.6.0
+    label: v0.6.0 release tag
+created: 2026-07-14
+updated: 2026-07-14
+featured: true
+---
+
+## Intent
+
+Make release and delivery scope visible without replacing the existing lifecycle, priority, or dependency model.
+
+## Acceptance criteria
+
+- [x] Declare ordered milestones in project configuration with optional target dates and descriptions.
+- [x] Assign a specification to a configured milestone and reject unknown milestone IDs.
+- [x] Query and filter work by milestone through the MCP server and main dashboard.
+- [x] Render a static roadmap that groups scheduled work, preserves lifecycle context, and surfaces unscheduled work.
+- [x] Document the milestone contract and cover validation and query behavior with automated tests.
+
+## Plan
+
+1. Extend the version-one schemas and project diagnostics without breaking projects that do not declare milestones.
+2. Include milestone data in the static snapshot and MCP query contract.
+3. Add roadmap navigation, milestone cards, filters, and detail metadata.
+4. Validate the self-hosted project and run the complete test and production build workflow.
+
+## Risks
+
+- Milestones can become a second lifecycle if their meaning is not kept to delivery grouping.
+- Target dates are planning signals, not automatic lifecycle transitions or shipping evidence.
+
+## Out of scope
+
+Editing content from the static dashboard, calendar scheduling, capacity estimation, and automatic release creation.

@@ -16,3 +16,7 @@ categories:
     label: Documentation
   - id: experience
     label: Experience
+milestones:
+  - id: next-release
+    label: Next release
+    description: Reviewed work intended for the next versioned delivery.

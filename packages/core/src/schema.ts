@@ -34,6 +34,15 @@ export const sourceRefSchema = z.object({
   label: z.string().min(1).optional(),
 });
 
+const boundedIdSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+
+export const milestoneSchema = z.object({
+  id: boundedIdSchema,
+  label: z.string().min(1),
+  description: z.string().min(1).optional(),
+  targetDate: dateSchema.optional(),
+});
+
 const commonFields = {
   schemaVersion: z.literal(1),
   id: z.string().regex(ID_PATTERN),
@@ -54,6 +63,7 @@ export const specFrontmatterSchema = z.object({
   kind: itemKindSchema,
   state: itemStateSchema,
   priority: prioritySchema,
+  milestone: boundedIdSchema.optional(),
   owners: z.array(z.string().min(1)).default([]),
   nextAction: z.string().min(3).optional(),
   blockers: z.array(z.string().min(3)).default([]),
@@ -85,6 +95,7 @@ export const dashboardConfigSchema = z.object({
   outputDir: z.string().default("dist"),
   base: z.string().default("/"),
   categories: z.array(categorySchema).default([]),
+  milestones: z.array(milestoneSchema).default([]),
   quality: z.object({
     staleAfterDays: z.number().int().positive().default(90),
   }).default({ staleAfterDays: 90 }),

@@ -13,7 +13,7 @@ content/
   knowledge/*.mdx
 ```
 
-Every entry has versioned frontmatter. The core validates schema, category, ID, and relationship integrity before Astro renders static HTML.
+Every entry has versioned frontmatter. The core validates schema, category, milestone, ID, and relationship integrity before Astro renders static HTML.
 
 ## Requirements
 
@@ -33,7 +33,7 @@ Every entry has versioned frontmatter. The core validates schema, category, ID, 
 Install the versioned marketplace and plugin:
 
 ```sh
-codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.5.1
+codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.6.0
 codex plugin add spec-dashboard@spec-dashboard
 ```
 
@@ -77,8 +77,9 @@ Use `--json` with `validate` or `reconcile` for machine-readable output. `--sinc
 The generated site includes:
 
 - overview counts for active, blocked, ready, backlog, review, and shipped work;
-- URL-backed filtering by text, state, kind, priority, category, and owner;
+- URL-backed filtering by text, state, kind, priority, milestone, category, and owner;
 - task progress derived from Markdown checklists;
+- an ordered milestone roadmap with delivery progress and unscheduled work;
 - dependency, related-entry, and backlink views;
 - a graphical Map/List relationship explorer with category, lifecycle, neighborhood, and zoom controls;
 - a health page for schema and readiness diagnostics;
@@ -127,6 +128,7 @@ summary: Generate a portable dashboard for every release.
 kind: feature
 state: active
 priority: p1
+milestone: next-release
 categories: [platform]
 tags: [static-site]
 owners: [oleg]
@@ -147,7 +149,17 @@ Knowledge entries use stable `KB-*` IDs and kinds such as `research`, `adr`, `ar
 
 ## Project configuration
 
-`specdash.config.yaml` defines project presentation, content/output paths, URL base, reconciliation base ref, and the bounded category taxonomy. A referenced category must be declared in this file.
+`specdash.config.yaml` defines project presentation, content/output paths, URL base, reconciliation base ref, the bounded category taxonomy, and ordered delivery milestones. A referenced category or milestone must be declared in this file.
+
+Milestones group work for delivery without changing its lifecycle or priority:
+
+```yaml
+milestones:
+  - id: next-release
+    label: Next release
+    description: Reviewed work selected for the next delivery.
+    targetDate: 2026-08-15 # optional planning signal
+```
 
 ## Git reconciliation and automation
 

@@ -29,7 +29,7 @@ export function createSpecDashboardServer(rootInput: string): McpServer {
   const root = fs.realpathSync(path.resolve(rootInput));
   let changes: ChangeStore | undefined;
   const changeStore = () => changes ??= new ChangeStore(root);
-  const server = new McpServer({ name: "spec-dashboard", version: "0.5.1" });
+  const server = new McpServer({ name: "spec-dashboard", version: "0.6.0" });
 
   const readJson = (uri: string, value: unknown) => ({ contents: [{ uri, mimeType: "application/json", text: JSON.stringify(value, null, 2) }] });
 
@@ -114,12 +114,13 @@ export function createSpecDashboardServer(rootInput: string): McpServer {
       state: z.string().optional(),
       kind: z.string().optional(),
       category: z.string().optional(),
+      milestone: z.string().optional(),
       owner: z.string().optional(),
       text: z.string().optional(),
     },
     outputSchema: { count: z.number(), entries: z.array(z.record(z.string(), z.unknown())) },
     annotations: { readOnlyHint: true, openWorldHint: false },
-  }, async ({ collection, state, kind, category, owner, text }) => {
+  }, async ({ collection, state, kind, category, milestone, owner, text }) => {
     const snapshot = projectSnapshot(loadProject(root));
     const entries = collection === "specs" ? snapshot.specs : collection === "knowledge" ? snapshot.knowledge : [...snapshot.specs, ...snapshot.knowledge];
     const query = text?.toLowerCase();
@@ -127,6 +128,7 @@ export function createSpecDashboardServer(rootInput: string): McpServer {
       if (state && (!("state" in entry) || entry.state !== state)) return false;
       if (kind && entry.kind !== kind) return false;
       if (category && !entry.categories.includes(category)) return false;
+      if (milestone && (!("milestone" in entry) || entry.milestone !== milestone)) return false;
       if (owner && (!("owners" in entry) || !entry.owners.includes(owner))) return false;
       const haystack = [entry.id, entry.title, entry.summary, ...entry.tags, ...entry.categories].join(" ").toLowerCase();
       return !query || haystack.includes(query);

@@ -120,7 +120,20 @@ export function loadProject(rootInput: string, options: { now?: Date } = {}): Pr
   const entries = [...specs, ...knowledge];
   const byId = new Map<string, ContentEntry<SpecFrontmatter | KnowledgeFrontmatter>>();
   const categoryIds = new Set(config.categories.map((category) => category.id));
+  const milestoneIds = new Set<string>();
   const now = options.now ?? new Date();
+
+  for (const milestone of config.milestones) {
+    if (milestoneIds.has(milestone.id)) {
+      diagnostics.push({
+        severity: "error",
+        code: "duplicate-milestone",
+        file: path.relative(root, configPath(root)),
+        message: `Milestone ${milestone.id} is declared more than once`,
+      });
+    }
+    milestoneIds.add(milestone.id);
+  }
 
   for (const entry of entries) {
     const duplicate = byId.get(entry.id);
@@ -144,6 +157,15 @@ export function loadProject(rootInput: string, options: { now?: Date } = {}): Pr
           message: `Category ${category} is not declared in specdash.config.yaml`,
         });
       }
+    }
+
+    if ("milestone" in entry.data && entry.data.milestone && !milestoneIds.has(entry.data.milestone)) {
+      diagnostics.push({
+        severity: "error",
+        code: "unknown-milestone",
+        file: entry.relativePath,
+        message: `Milestone ${entry.data.milestone} is not declared in specdash.config.yaml`,
+      });
     }
   }
 
@@ -227,6 +249,7 @@ export function projectSnapshot(project: ProjectModel) {
     schemaVersion: 1,
     project: project.config.project,
     categories: project.config.categories,
+    milestones: project.config.milestones,
     specs: project.specs.map((entry) => ({
       ...entry.data,
       analysis: entry.analysis,

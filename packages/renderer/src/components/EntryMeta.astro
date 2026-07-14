@@ -9,6 +9,7 @@ const rows = [
   ["Kind", data.kind],
   ["State", data.state],
   ["Priority", data.priority],
+  ["Milestone", data.milestone],
   ["Owners", Array.isArray(data.owners) ? data.owners.join(", ") || "Unassigned" : undefined],
   ["Categories", Array.isArray(data.categories) ? data.categories.join(", ") : undefined],
   ["Updated", data.updated],

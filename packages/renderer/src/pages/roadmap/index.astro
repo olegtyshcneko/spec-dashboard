@@ -1,0 +1,111 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { snapshot } from "../../lib/project";
+
+const priorityRank = { p0: 0, p1: 1, p2: 2, p3: 3 };
+const stateRank = { blocked: 0, review: 1, active: 2, ready: 3, backlog: 4, idea: 5, shipped: 6, archived: 7 };
+const sortSpecs = (specs) => [...specs].sort((a, b) =>
+  priorityRank[a.priority] - priorityRank[b.priority]
+  || stateRank[a.state] - stateRank[b.state]
+  || a.id.localeCompare(b.id));
+
+const milestoneGroups = snapshot.milestones.map((milestone) => ({
+  ...milestone,
+  specs: sortSpecs(snapshot.specs.filter((spec) => spec.milestone === milestone.id && spec.state !== "archived")),
+}));
+const unscheduled = sortSpecs(snapshot.specs.filter((spec) =>
+  !spec.milestone && !["shipped", "archived"].includes(spec.state)));
+const scheduledCount = snapshot.specs.filter((spec) => spec.milestone && spec.state !== "archived").length;
+---
+<BaseLayout title="Roadmap">
+  <main>
+    <div class="roadmap-heading">
+      <div>
+        <p class="roadmap-eyebrow">Delivery view</p>
+        <h1>Roadmap</h1>
+        <p class="summary">Ordered milestones connect delivery scope to the lifecycle, priority, and evidence already tracked by each specification.</p>
+      </div>
+      <div class="roadmap-summary" aria-label="Roadmap summary">
+        <span><strong>{snapshot.milestones.length}</strong> milestones</span>
+        <span><strong>{scheduledCount}</strong> scheduled</span>
+        <span><strong>{unscheduled.length}</strong> unscheduled</span>
+      </div>
+    </div>
+
+    {snapshot.milestones.length === 0 && (
+      <div class="roadmap-empty">
+        <strong>No milestones configured.</strong>
+        <p>Add an ordered <code>milestones</code> list to <code>specdash.config.yaml</code>, then assign work with the optional <code>milestone</code> field.</p>
+      </div>
+    )}
+
+    <div class="roadmap-list">
+      {milestoneGroups.map((milestone) => {
+        const shipped = milestone.specs.filter((spec) => spec.state === "shipped").length;
+        const progress = milestone.specs.length ? Math.round((shipped / milestone.specs.length) * 100) : 0;
+        return (
+          <section class="roadmap-milestone" aria-labelledby={`milestone-${milestone.id}`}>
+            <header class="roadmap-milestone-header">
+              <div>
+                <div class="roadmap-milestone-title">
+                  <h2 id={`milestone-${milestone.id}`}>{milestone.label}</h2>
+                  <code>{milestone.id}</code>
+                </div>
+                {milestone.description && <p>{milestone.description}</p>}
+              </div>
+              <div class="roadmap-target">
+                {milestone.targetDate ? <><span>Target</span><time datetime={milestone.targetDate}>{milestone.targetDate}</time></> : <span>No target date</span>}
+              </div>
+            </header>
+            <div class="roadmap-progress-row">
+              <div class="roadmap-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress} aria-label={`${milestone.label} completion`}>
+                <span style={`width: ${progress}%`}></span>
+              </div>
+              <span>{shipped}/{milestone.specs.length} shipped</span>
+            </div>
+            {milestone.specs.length === 0 ? <p class="empty">No work is assigned to this milestone.</p> : (
+              <div class="roadmap-items">
+                {milestone.specs.map((spec) => (
+                  <a class="roadmap-item" href={spec.href}>
+                    <span class="pill" data-status={spec.state}>{spec.state}</span>
+                    <span class="roadmap-item-body">
+                      <strong>{spec.id} · {spec.title}</strong>
+                      <span>{spec.summary}</span>
+                      {spec.nextAction && <small>Next: {spec.nextAction}</small>}
+                    </span>
+                    <span class="roadmap-item-meta">{spec.priority} · {spec.kind}</span>
+                  </a>
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
+
+      {unscheduled.length > 0 && (
+        <section class="roadmap-milestone roadmap-unscheduled" aria-labelledby="milestone-unscheduled">
+          <header class="roadmap-milestone-header">
+            <div>
+              <div class="roadmap-milestone-title"><h2 id="milestone-unscheduled">Unscheduled work</h2></div>
+              <p>Open work that has not yet been selected for a delivery milestone.</p>
+            </div>
+            <div class="roadmap-target"><span>{unscheduled.length} items</span></div>
+          </header>
+          <div class="roadmap-items">
+            {unscheduled.map((spec) => (
+              <a class="roadmap-item" href={spec.href}>
+                <span class="pill" data-status={spec.state}>{spec.state}</span>
+                <span class="roadmap-item-body">
+                  <strong>{spec.id} · {spec.title}</strong>
+                  <span>{spec.summary}</span>
+                  {spec.nextAction && <small>Next: {spec.nextAction}</small>}
+                </span>
+                <span class="roadmap-item-meta">{spec.priority} · {spec.kind}</span>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  </main>
+</BaseLayout>

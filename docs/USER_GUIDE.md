@@ -46,7 +46,7 @@ Spec Dashboard is not a passive documentation daemon. Skills activate when a use
 Run these commands once:
 
 ```sh
-codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.5.1
+codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.6.0
 codex plugin add spec-dashboard@spec-dashboard
 ```
 
@@ -115,6 +115,8 @@ Ask Codex to query the canonical model rather than scan every file:
 
 > Show ready P0 and P1 work in the platform category, including dependencies, blockers, owners, and next actions.
 
+> Show work assigned to the next-release milestone, grouped by lifecycle state.
+
 > What active items are unowned or missing a next action?
 
 > Show the knowledge entries connected to `SPEC-014`.
@@ -162,6 +164,32 @@ Use explicit transitions:
 
 The MCP enforces the allowed state machine. It does not mark an item shipped because code exists, a branch name matches, or a PR is open. Shipping should retain release or verification evidence.
 
+## Plan delivery with milestones
+
+Milestones answer which work belongs to a delivery. They do not replace lifecycle, priority, dependencies, or release evidence. Declare them in roadmap order in `specdash.config.yaml`:
+
+```yaml
+milestones:
+  - id: next-release
+    label: Next release
+    description: Reviewed work selected for the next delivery.
+    targetDate: 2026-08-15
+  - id: later
+    label: Later
+```
+
+`targetDate` is optional and must use `YYYY-MM-DD`. Assign a specification with the configured ID:
+
+```yaml
+milestone: next-release
+```
+
+Unknown IDs and duplicate milestone declarations fail validation. The roadmap follows configuration order, includes every non-archived item assigned to a milestone, and separately surfaces open unscheduled work. Shipped work without a milestone does not clutter the unscheduled queue.
+
+After the configuration is reviewed in Git, use the capture workflow to assign work:
+
+> Add SPEC-014 to the configured next-release milestone. Preserve its lifecycle and priority, and preview the content change before applying it.
+
 ## Reconcile after implementation changes
 
 Reconciliation compares declared file evidence with Git history and working-tree changes:
@@ -186,10 +214,10 @@ Ask Codex:
 Or use the tagged CLI directly:
 
 ```sh
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.5.1 \
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.6.0 \
   specdash validate --root .
 
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.5.1 \
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.6.0 \
   specdash build --root .
 ```
 
@@ -209,8 +237,9 @@ For CI and GitHub Pages, follow [AUTOMATION.md](AUTOMATION.md).
 The generated dashboard provides:
 
 - Counts and filters for active, blocked, ready, backlog, review, and shipped work.
-- Search by ID, title, summary, category, owner, or tag.
+- Search and URL-backed filters by ID, title, summary, milestone, category, owner, or tag.
 - Checklist progress derived from Markdown.
+- A roadmap that groups delivery scope by configured milestone and calls out unscheduled open work.
 - Health diagnostics for invalid, stale, or operationally incomplete entries.
 - Knowledge pages connected to specifications by generated backlinks.
 - A relationship Map/List switcher with category, lifecycle, and neighborhood scoping.

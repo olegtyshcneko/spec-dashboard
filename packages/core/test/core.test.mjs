@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { assertTransition, loadProject, reconcileProject } from "../dist/index.js";
+import { assertTransition, loadProject, projectSnapshot, reconcileProject } from "../dist/index.js";
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "specdash-core-"));
@@ -73,6 +73,74 @@ Body.
 `);
   const project = loadProject(root);
   assert.equal(project.diagnostics[0]?.code, "broken-reference");
+});
+
+test("validates milestone assignments and exposes roadmap metadata", () => {
+  const root = fixture();
+  fs.appendFileSync(path.join(root, "specdash.config.yaml"), `
+milestones:
+  - id: next-release
+    label: Next release
+    description: Work selected for the next delivery.
+    targetDate: 2026-08-01
+`);
+  fs.writeFileSync(path.join(root, "content/specs/scheduled.mdx"), `---
+schemaVersion: 1
+id: SPEC-001
+title: Scheduled feature
+summary: A feature assigned to a configured delivery milestone.
+kind: feature
+state: backlog
+priority: p1
+milestone: next-release
+categories: [platform]
+tags: []
+owners: []
+dependsOn: []
+related: []
+sourceRefs: []
+created: 2026-07-11
+updated: 2026-07-11
+---
+Body.
+`);
+
+  const project = loadProject(root);
+  assert.equal(project.diagnostics.length, 0);
+  assert.equal(project.specs[0]?.data.milestone, "next-release");
+  assert.deepEqual(projectSnapshot(project).milestones, [{
+    id: "next-release",
+    label: "Next release",
+    description: "Work selected for the next delivery.",
+    targetDate: "2026-08-01",
+  }]);
+
+  fs.writeFileSync(path.join(root, "content/specs/unknown.mdx"), `---
+schemaVersion: 1
+id: SPEC-002
+title: Unknown milestone feature
+summary: A feature assigned to an undeclared delivery milestone.
+kind: feature
+state: backlog
+priority: p2
+milestone: missing-release
+categories: [platform]
+tags: []
+owners: []
+dependsOn: []
+related: []
+sourceRefs: []
+created: 2026-07-11
+updated: 2026-07-11
+---
+Body.
+`);
+  assert.ok(loadProject(root).diagnostics.some((diagnostic) => diagnostic.code === "unknown-milestone"));
+
+  fs.appendFileSync(path.join(root, "specdash.config.yaml"), `  - id: next-release
+    label: Duplicate next release
+`);
+  assert.ok(loadProject(root).diagnostics.some((diagnostic) => diagnostic.code === "duplicate-milestone"));
 });
 
 test("derives task progress, graph edges, and readiness diagnostics", () => {

@@ -3,7 +3,7 @@
 The Spec Dashboard MCP server exposes a validated project model over stdio. It is intended to run once per target repository with an explicit project root.
 
 ```sh
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.5.1 \
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.6.0 \
   specdash-mcp --root /absolute/path/to/project
 ```
 
@@ -19,7 +19,7 @@ The MCP does not write arbitrary application source files, Git configuration, CI
 
 ### `specdash://project/summary`
 
-Validated project snapshot containing configuration metadata, categories, specs, knowledge entries, analysis, links, graph edges, backlinks, and diagnostics.
+Validated project snapshot containing configuration metadata, categories, milestones, specs, knowledge entries, analysis, links, graph edges, backlinks, and diagnostics.
 
 Use it for broad project orientation or to construct a read-only external view.
 
@@ -63,7 +63,7 @@ Behavior:
 
 ### `specdash.validate`
 
-Validate frontmatter, categories, IDs, references, readiness rules, and freshness.
+Validate frontmatter, categories, milestones, IDs, references, readiness rules, and freshness.
 
 Input: none.
 
@@ -87,6 +87,7 @@ Optional filters:
 | `state` | Lifecycle state for specifications |
 | `kind` | Spec or knowledge kind |
 | `category` | Configured category ID |
+| `milestone` | Configured milestone ID for specifications |
 | `owner` | Exact owner value |
 | `text` | Case-insensitive search across ID, title, summary, tags, and categories |
 
@@ -211,7 +212,7 @@ Requesting the current state is idempotent. All other unlisted transitions are r
 
 ## Diagnostics
 
-Errors block a valid build. Current error classes include invalid frontmatter, duplicate IDs, unknown categories, self-references, and broken references.
+Errors block a valid build. Current error classes include invalid frontmatter, duplicate IDs, unknown categories, duplicate milestone declarations, unknown milestone assignments, self-references, and broken references.
 
 Warnings identify valid but operationally incomplete content, including:
 

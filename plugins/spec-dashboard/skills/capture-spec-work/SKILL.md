@@ -17,6 +17,7 @@ Turn one unit of project work into an evidence-backed specification.
    - `state` describes lifecycle.
    - `priority` describes urgency or importance.
    - `categories` use only configured IDs.
+   - `milestone` groups delivery scope and uses only a configured milestone ID; it does not imply lifecycle or priority.
 5. Default uncertain work to `idea` or `backlog`. Require current ownership and implementation evidence for `active`; require verification or release evidence for `shipped`.
 6. Write a concise MDX body with Intent, Acceptance criteria, Plan or Known facts, Risks or Open questions, and Out of scope when relevant. Make acceptance criteria observable and testable.
 7. Include source references and explicit dependencies. Do not invent owners, dates, URLs, file paths, completion, or business decisions.
