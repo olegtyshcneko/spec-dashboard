@@ -721,10 +721,10 @@ h1 {
 }
 ```
 
-In `packages/renderer/src/styles/global.css`, extend the milestone title and stat number rules — change `.roadmap-milestone-title h2 { margin: 0; font-size: 20px; }` to:
+In `packages/renderer/src/styles/global.css`, extend the milestone title and stat number rules — change `.roadmap-milestone-title .roadmap-milestone-name { margin: 0; font-size: 20px; }` (the title is a `<strong class="roadmap-milestone-name">` since the Task 1 validity fix) to:
 
 ```css
-.roadmap-milestone-title h2 { margin: 0; font-family: var(--font-display); font-size: 19px; letter-spacing: -0.01em; }
+.roadmap-milestone-title .roadmap-milestone-name { margin: 0; font-family: var(--font-display); font-size: 19px; letter-spacing: -0.01em; }
 ```
 
 and `.roadmap-summary strong { color: var(--text); font-size: 20px; line-height: 1.1; }` to:
@@ -760,7 +760,7 @@ In `BaseLayout.astro` `<head>`, after the `<meta name="generator" ...>` line, ad
 ```js
 () => ({
   h1Mono: getComputedStyle(document.querySelector('main h1')).fontFamily.includes('mono'),     // expect true
-  msTitleMono: getComputedStyle(document.querySelector('.roadmap-milestone-title h2')).fontFamily.includes('mono'), // expect true
+  msTitleMono: getComputedStyle(document.querySelector('.roadmap-milestone-title .roadmap-milestone-name')).fontFamily.includes('mono'), // expect true
   chipGone: !document.querySelector('.roadmap-milestone-title > code'),                        // expect true
   favicon: !!document.querySelector('link[rel="icon"]'),                                       // expect true
 })
