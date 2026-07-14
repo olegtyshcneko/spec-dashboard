@@ -163,3 +163,61 @@ its most informative pixel. Honors `prefers-reduced-motion` by rendering static.
    newest-first like a changelog?
 4. Is a typography/identity pass (P2-7) in scope, or is this review limited to
    hierarchy/clarity fixes?
+
+## Implemented 2026-07-14
+
+Shipped on the `worktree-roadmap-design-improvements` branch. Verified via the
+core + mcp test suites, `html-validate`, and a full desktop (1440×900) + mobile
+(390×844) Playwright sweep of every page.
+
+### Findings addressed
+
+- **P0-1 · Milestone hierarchy** — completed milestones now collapse to one-line
+  `<details>` summary rows (`● v0.1.0 · MDX compiler — 2/2 shipped — Jul 11`);
+  active/planned milestones render expanded. Work-state filters force the matching
+  details open. A one-time hero anchor scrolls the active/planned milestone into
+  view on load when it starts below the fold.
+- **P0-2 · Default landing** — `scope=current` now surfaces the most recently
+  shipped milestone (tagged "Latest shipped") above a directive empty state that
+  names the concrete action (`milestone: next-release`) instead of a passive
+  "no work assigned" line.
+- **P0-3 · Color roles** — planned is now backlog blue (`--s-backlog-fg`,
+  #93c5fd), completed progress bars are a single quiet green fill, and the
+  orange→green gradient is reserved exclusively for the active milestone's real
+  partial progress (`[data-milestone-status="active"] .roadmap-progress span`).
+- **P1-4 · Redundant status signals** — the left rail is slimmed to a 96px spine
+  with dots only; the duplicate status pill and rail date are gone, leaving the
+  card's own dot + single date to carry the state.
+- **P1-5 · Dates and counts** — display dates humanized ("Jul 11, 2026", ISO kept
+  in `title`); stat tiles relabeled with explicit units
+  ("8 milestones / 7 delivered / 8 specs scheduled"); count line rewritten to
+  "Showing X of Y milestones · <scope>".
+- **P1-6 · Toolbar** — the scope control now carries a label to match its
+  neighbors; the Timeline/List view switch moved out of the filter card up to the
+  overview row; native `<select>`s get `appearance: none` + a custom chevron; and
+  "Clear filters" is disabled whenever nothing is filtered (default scope, no
+  milestone/state/search).
+- **P2-7 · Identity (partial)** — a mono display face (`--font-display`, the
+  system mono stack) is applied to the h1, milestone titles, and stat numbers,
+  keeping the system sans for body. Delivered via the platform mono stack rather
+  than a bundled webfont, so the terminal/manifest character lands with no extra
+  network payload.
+- **P2-8 · Polish** — the redundant slug chip (`v0-1-0` next to a `v0.1.0` title)
+  was removed, and an inline SVG favicon is linked in the layout head (no more
+  `/favicon.ico` 404 — confirmed zero console errors across the sweep).
+
+### Deliberately skipped
+
+- **Stat tiles stay global.** Rather than make the tiles react to the active
+  filter, their labels were clarified so the global scope is unambiguous; the
+  mixed filtered/unfiltered reading called out in P1-5 is thereby avoided without
+  coupling the tiles to the filter state.
+- **Legend position unchanged.** The legend anchoring suggestion in P2-8 was not
+  pursued; its current placement was judged acceptable for this pass.
+
+### Accepted trade-off
+
+- Milestone titles are marked up as `<strong>`, not `<h2>`. Headings are not valid
+  phrasing content inside a `<summary>`, and HTML validity there was prioritized
+  over heading-based navigation — screen readers flatten headings within a summary
+  anyway, so the practical accessibility cost is negligible.
