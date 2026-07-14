@@ -91,6 +91,17 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
         </select>
       </label>
 
+      <label>Time range
+        <select id="roadmap-range">
+          <option value="">All time</option>
+          <option value="30d">Last 30 days</option>
+          <option value="90d">Last 90 days</option>
+          <option value="1y">Last year</option>
+          <option value="next90d">Next 90 days</option>
+          <option value="year">This year</option>
+        </select>
+      </label>
+
       <label class="roadmap-search-control">Search
         <input id="roadmap-search" type="search" placeholder="Milestone or work item…" />
       </label>
@@ -259,18 +270,45 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
   <script>
     const validScopes = new Set(["current", "all", "completed"]);
     const validViews = new Set(["timeline", "list"]);
+    const validRanges = new Set(["30d", "90d", "1y", "next90d", "year"]);
     const params = new URLSearchParams(location.search);
     let activeScope = validScopes.has(params.get("scope")) ? params.get("scope") : "current";
     let activeView = validViews.has(params.get("view")) ? params.get("view") : "timeline";
     const milestoneSelect = document.querySelector("#roadmap-milestone");
     const stateSelect = document.querySelector("#roadmap-state");
     const search = document.querySelector("#roadmap-search");
+    const rangeSelect = document.querySelector("#roadmap-range");
     const status = document.querySelector("#roadmap-scope-status");
     const empty = document.querySelector("#roadmap-filter-empty");
     const clearButton = document.querySelector("#roadmap-clear");
     milestoneSelect.value = params.get("milestone") || "";
     stateSelect.value = params.get("state") || "";
     search.value = params.get("q") || "";
+    rangeSelect.value = validRanges.has(params.get("range")) ? params.get("range") : "";
+
+    let activeRange = null;
+
+    function isoDate(date) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    }
+
+    function shiftDays(days) {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      return isoDate(date);
+    }
+
+    function rangeWindow() {
+      const today = isoDate(new Date());
+      switch (rangeSelect.value) {
+        case "30d": return [shiftDays(-30), today];
+        case "90d": return [shiftDays(-90), today];
+        case "1y": return [shiftDays(-365), today];
+        case "next90d": return [today, shiftDays(90)];
+        case "year": return [`${today.slice(0, 4)}-01-01`, `${today.slice(0, 4)}-12-31`];
+        default: return null;
+      }
+    }
 
     function updateUrl() {
       const next = new URLSearchParams();
@@ -278,6 +316,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
       next.set("view", activeView);
       if (milestoneSelect.value) next.set("milestone", milestoneSelect.value);
       if (stateSelect.value) next.set("state", stateSelect.value);
+      if (rangeSelect.value) next.set("range", rangeSelect.value);
       if (search.value.trim()) next.set("q", search.value.trim());
       history.replaceState(null, "", `${location.pathname}?${next}`);
     }
@@ -292,6 +331,11 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
       const query = search.value.trim().toLowerCase();
       const milestoneMatches = !milestoneSelect.value || group.dataset.milestone === milestoneSelect.value;
       const scopeMatches = groupMatchesScope(group);
+      const rangeMatches = !activeRange || Boolean(
+        group.dataset.dateStart
+        && group.dataset.dateStart <= activeRange[1]
+        && group.dataset.dateEnd >= activeRange[0]
+      );
       const groupSearchMatches = !query || group.dataset.search.includes(query);
       let visibleSpecs = 0;
       const specs = [...group.querySelectorAll("[data-roadmap-spec]")];
@@ -303,7 +347,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
       }
       const workFilterActive = Boolean(stateSelect.value || query);
       const workMatches = !workFilterActive || visibleSpecs > 0 || (Number(group.dataset.specCount) === 0 && groupSearchMatches);
-      group.hidden = !(milestoneMatches && scopeMatches && workMatches);
+      group.hidden = !(milestoneMatches && scopeMatches && rangeMatches && workMatches);
       if (workFilterActive && !group.hidden) {
         const details = group.matches("details") ? group : group.querySelector("details");
         if (details) details.open = true;
@@ -312,6 +356,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
     }
 
     function render() {
+      activeRange = rangeWindow();
       document.querySelectorAll("[data-scope-button]").forEach((button) => {
         button.setAttribute("aria-pressed", String(button.dataset.scopeButton === activeScope));
       });
@@ -331,7 +376,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
       const totalGroups = activePanel.querySelectorAll("[data-roadmap-group]").length;
       status.textContent = `Showing ${visibleGroups} of ${totalGroups} milestones · ${scopeLabel}`;
       empty.hidden = visibleGroups > 0;
-      clearButton.disabled = activeScope === "current" && !milestoneSelect.value && !stateSelect.value && !search.value.trim();
+      clearButton.disabled = activeScope === "current" && !milestoneSelect.value && !stateSelect.value && !rangeSelect.value && !search.value.trim();
       updateUrl();
     }
 
@@ -345,11 +390,13 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
     }));
     milestoneSelect.addEventListener("change", render);
     stateSelect.addEventListener("change", render);
+    rangeSelect.addEventListener("change", render);
     search.addEventListener("input", render);
     clearButton.addEventListener("click", () => {
       activeScope = "current";
       milestoneSelect.value = "";
       stateSelect.value = "";
+      rangeSelect.value = "";
       search.value = "";
       document.querySelectorAll("[data-roadmap-group]").forEach((group) => {
         const details = group.matches("details") ? group : group.querySelector("details");
