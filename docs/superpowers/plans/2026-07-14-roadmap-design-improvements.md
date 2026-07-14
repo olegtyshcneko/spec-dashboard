@@ -481,7 +481,7 @@ with:
 Replace the timeline panel's `.roadmap-target` block (inside the summary, from Task 1) with:
 
 ```astro
-                  <div class="roadmap-target">
+                  <span class="roadmap-target">
                     {milestone.status === "completed"
                       ? milestone.completedDate && <span>Shipped <time datetime={milestone.completedDate}>{fmtDate(milestone.completedDate)}</time></span>
                       : (
@@ -490,7 +490,9 @@ Replace the timeline panel's `.roadmap-target` block (inside the summary, from T
                           {milestone.targetDate && <span>Target <time datetime={milestone.targetDate}>{fmtDate(milestone.targetDate)}</time></span>}
                         </>
                       )}
-                  </div>
+                  </span>
+
+(note: `.roadmap-target` is a `<span>` since the Task 1 validity fix — keep it a span; only phrasing content is allowed inside `<summary>`.)
 ```
 
 The list panel's `.roadmap-target` already renders a single `dateLabel(milestone)` — leave it (now humanized via Step 1).
