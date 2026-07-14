@@ -133,7 +133,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
                 <span class="roadmap-milestone-header">
                   <span>
                     <span class="roadmap-milestone-title">
-                      <h2>{milestone.label}</h2>
+                      <strong class="roadmap-milestone-name">{milestone.label}</strong>
                       <code>{milestone.id}</code>
                     </span>
                     {milestone.description && <span class="roadmap-milestone-desc">{milestone.description}</span>}
@@ -188,23 +188,23 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
             data-spec-count={milestone.specs.length}
           >
             <summary>
-            <span class="roadmap-milestone-header">
-              <span>
-                <span class="roadmap-milestone-title">
-                  <h2>{milestone.label}</h2>
-                  <span class="milestone-status" data-status={milestone.status}>{milestone.status}</span>
-                  <code>{milestone.id}</code>
+              <span class="roadmap-milestone-header">
+                <span>
+                  <span class="roadmap-milestone-title">
+                    <strong class="roadmap-milestone-name">{milestone.label}</strong>
+                    <span class="milestone-status" data-status={milestone.status}>{milestone.status}</span>
+                    <code>{milestone.id}</code>
+                  </span>
+                  {milestone.description && <span class="roadmap-milestone-desc">{milestone.description}</span>}
                 </span>
-                {milestone.description && <span class="roadmap-milestone-desc">{milestone.description}</span>}
+                <span class="roadmap-target"><span>{dateLabel(milestone)}</span></span>
               </span>
-              <span class="roadmap-target"><span>{dateLabel(milestone)}</span></span>
-            </span>
-            <span class="roadmap-progress-row">
-              <span class="roadmap-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={milestone.progress} aria-label={`${milestone.label} completion`}>
-                <span style={`width: ${milestone.progress}%`}></span>
+              <span class="roadmap-progress-row">
+                <span class="roadmap-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={milestone.progress} aria-label={`${milestone.label} completion`}>
+                  <span style={`width: ${milestone.progress}%`}></span>
+                </span>
+                <span>{milestone.shipped}/{milestone.specs.length} shipped</span>
               </span>
-              <span>{milestone.shipped}/{milestone.specs.length} shipped</span>
-            </span>
             </summary>
             {milestone.specs.length === 0 ? <p class="empty">No work is assigned to this milestone.</p> : (
               <div class="roadmap-items">
