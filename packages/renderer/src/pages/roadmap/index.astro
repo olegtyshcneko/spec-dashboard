@@ -345,6 +345,10 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
       milestoneSelect.value = "";
       stateSelect.value = "";
       search.value = "";
+      document.querySelectorAll("[data-roadmap-group]").forEach((group) => {
+        const details = group.matches("details") ? group : group.querySelector("details");
+        if (details) details.open = group.dataset.milestoneStatus !== "completed";
+      });
       render();
     });
     render();
