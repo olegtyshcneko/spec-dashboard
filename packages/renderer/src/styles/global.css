@@ -473,6 +473,19 @@ body {
 .milestone-status[data-status="active"] { color: var(--gold); border-color: var(--s-wip-border); background: var(--s-wip-bg); }
 .milestone-status[data-status="completed"] { color: var(--s-implemented-fg); border-color: var(--s-implemented-border); background: var(--s-implemented-bg); }
 
+.roadmap-latest-tag {
+  padding: 2px 8px;
+  color: var(--s-implemented-fg);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--s-implemented-bg);
+  border: 1px solid var(--s-implemented-border);
+  border-radius: 999px;
+}
+
 .roadmap-timeline-axis { position: relative; }
 .roadmap-timeline-axis::before {
   position: absolute;

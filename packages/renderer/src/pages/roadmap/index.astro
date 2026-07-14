@@ -30,6 +30,10 @@ const unscheduledGroup = unscheduledSpecs.length > 0 ? {
   progress: 0,
 } : null;
 const groups = unscheduledGroup ? [...milestoneGroups, unscheduledGroup] : milestoneGroups;
+const latestCompleted = milestoneGroups
+  .filter((milestone) => milestone.status === "completed" && milestone.completedDate)
+  .sort((a, b) => a.completedDate.localeCompare(b.completedDate))
+  .at(-1) ?? null;
 const scheduledCount = snapshot.specs.filter((spec) => spec.milestone && spec.state !== "archived").length;
 const completedMilestones = milestoneGroups.filter((milestone) => milestone.status === "completed").length;
 const lifecycleStates = [...new Set(snapshot.specs.filter((spec) => spec.state !== "archived").map((spec) => spec.state))].sort();
@@ -122,6 +126,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
             data-milestone-status={milestone.status}
             data-search={searchText(milestone)}
             data-spec-count={milestone.specs.length}
+            data-latest-completed={latestCompleted && milestone.id === latestCompleted.id ? "true" : undefined}
           >
             <div class="roadmap-timeline-date">
               <span class="milestone-status" data-status={milestone.status}>{milestone.status}</span>
@@ -135,6 +140,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
                     <span class="roadmap-milestone-title">
                       <strong class="roadmap-milestone-name">{milestone.label}</strong>
                       <code>{milestone.id}</code>
+                      {latestCompleted && milestone.id === latestCompleted.id && <span class="roadmap-latest-tag">Latest shipped</span>}
                     </span>
                     {milestone.description && <span class="roadmap-milestone-desc">{milestone.description}</span>}
                   </span>
@@ -151,7 +157,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
                   <span>{milestone.shipped}/{milestone.specs.length} shipped</span>
                 </span>
               </summary>
-              {milestone.specs.length === 0 ? <p class="empty">No work is assigned to this milestone.</p> : (
+              {milestone.specs.length === 0 ? <p class="empty">No work assigned yet. Add <code>milestone: {milestone.id}</code> to a spec's frontmatter to schedule it here.</p> : (
                 <div class="roadmap-timeline-work">
                   {milestone.specs.map((spec) => (
                     <a
@@ -186,6 +192,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
             data-milestone-status={milestone.status}
             data-search={searchText(milestone)}
             data-spec-count={milestone.specs.length}
+            data-latest-completed={latestCompleted && milestone.id === latestCompleted.id ? "true" : undefined}
           >
             <summary>
               <span class="roadmap-milestone-header">
@@ -194,6 +201,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
                     <strong class="roadmap-milestone-name">{milestone.label}</strong>
                     <span class="milestone-status" data-status={milestone.status}>{milestone.status}</span>
                     <code>{milestone.id}</code>
+                    {latestCompleted && milestone.id === latestCompleted.id && <span class="roadmap-latest-tag">Latest shipped</span>}
                   </span>
                   {milestone.description && <span class="roadmap-milestone-desc">{milestone.description}</span>}
                 </span>
@@ -206,7 +214,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
                 <span>{milestone.shipped}/{milestone.specs.length} shipped</span>
               </span>
             </summary>
-            {milestone.specs.length === 0 ? <p class="empty">No work is assigned to this milestone.</p> : (
+            {milestone.specs.length === 0 ? <p class="empty">No work assigned yet. Add <code>milestone: {milestone.id}</code> to a spec's frontmatter to schedule it here.</p> : (
               <div class="roadmap-items">
                 {milestone.specs.map((spec) => (
                   <a
@@ -260,7 +268,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
     function groupMatchesScope(group) {
       if (activeScope === "all") return true;
       if (activeScope === "completed") return group.dataset.milestoneStatus === "completed";
-      return group.dataset.milestoneStatus !== "completed";
+      return group.dataset.milestoneStatus !== "completed" || group.dataset.latestCompleted === "true";
     }
 
     function filterGroup(group) {
