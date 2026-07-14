@@ -9,13 +9,40 @@ const sortSpecs = (specs) => [...specs].sort((a, b) =>
   || stateRank[a.state] - stateRank[b.state]
   || a.id.localeCompare(b.id));
 
-const milestoneGroups = snapshot.milestones.map((milestone) => ({
-  ...milestone,
-  specs: sortSpecs(snapshot.specs.filter((spec) => spec.milestone === milestone.id && spec.state !== "archived")),
-}));
-const unscheduled = sortSpecs(snapshot.specs.filter((spec) =>
-  !spec.milestone && !["shipped", "archived"].includes(spec.state)));
+const milestoneGroups = snapshot.milestones.map((milestone) => {
+  const specs = sortSpecs(snapshot.specs.filter((spec) => spec.milestone === milestone.id && spec.state !== "archived"));
+  const shipped = specs.filter((spec) => spec.state === "shipped").length;
+  return {
+    ...milestone,
+    specs,
+    shipped,
+    progress: specs.length ? Math.round((shipped / specs.length) * 100) : 0,
+  };
+});
+const unscheduledSpecs = sortSpecs(snapshot.specs.filter((spec) => !spec.milestone && !["shipped", "archived"].includes(spec.state)));
+const unscheduledGroup = unscheduledSpecs.length > 0 ? {
+  id: "unscheduled",
+  label: "Unscheduled work",
+  description: "Open work that has not yet been selected for a delivery milestone.",
+  status: "active",
+  specs: unscheduledSpecs,
+  shipped: 0,
+  progress: 0,
+} : null;
+const groups = unscheduledGroup ? [...milestoneGroups, unscheduledGroup] : milestoneGroups;
 const scheduledCount = snapshot.specs.filter((spec) => spec.milestone && spec.state !== "archived").length;
+const completedMilestones = milestoneGroups.filter((milestone) => milestone.status === "completed").length;
+const lifecycleStates = [...new Set(snapshot.specs.filter((spec) => spec.state !== "archived").map((spec) => spec.state))].sort();
+
+const dateLabel = (milestone) => {
+  if (milestone.completedDate) return `Completed ${milestone.completedDate}`;
+  if (milestone.startDate && milestone.targetDate) return `${milestone.startDate} → ${milestone.targetDate}`;
+  if (milestone.targetDate) return `Target ${milestone.targetDate}`;
+  if (milestone.startDate) return `Started ${milestone.startDate}`;
+  return "Date not set";
+};
+const searchText = (milestone) => [milestone.id, milestone.label, milestone.description || ""].join(" ").toLowerCase();
+const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state, spec.kind, spec.priority, ...(spec.categories || []), ...(spec.tags || [])].join(" ").toLowerCase();
 ---
 <BaseLayout title="Roadmap">
   <main>
@@ -23,12 +50,50 @@ const scheduledCount = snapshot.specs.filter((spec) => spec.milestone && spec.st
       <div>
         <p class="roadmap-eyebrow">Delivery view</p>
         <h1>Roadmap</h1>
-        <p class="summary">Ordered milestones connect delivery scope to the lifecycle, priority, and evidence already tracked by each specification.</p>
+        <p class="summary">Follow current delivery or reveal completed releases as a graphical vertical timeline or compact list.</p>
       </div>
+    </div>
+
+    <div class="roadmap-toolbar" aria-label="Roadmap controls">
+      <div class="roadmap-scope-switch" role="group" aria-label="Milestone scope">
+        <button type="button" data-scope-button="current" aria-pressed="false">Current</button>
+        <button type="button" data-scope-button="all" aria-pressed="false">All</button>
+        <button type="button" data-scope-button="completed" aria-pressed="false">Completed</button>
+      </div>
+
+      <label>Milestone
+        <select id="roadmap-milestone">
+          <option value="">All milestones</option>
+          {snapshot.milestones.map((milestone) => <option value={milestone.id}>{milestone.label}</option>)}
+          {unscheduledGroup && <option value="unscheduled">Unscheduled work</option>}
+        </select>
+      </label>
+
+      <label>Work state
+        <select id="roadmap-state">
+          <option value="">All states</option>
+          {lifecycleStates.map((state) => <option value={state}>{state}</option>)}
+        </select>
+      </label>
+
+      <label class="roadmap-search-control">Search
+        <input id="roadmap-search" type="search" placeholder="Milestone or work item…" />
+      </label>
+
+      <button type="button" class="roadmap-clear" id="roadmap-clear">Clear filters</button>
+
+      <div class="roadmap-view-switch" role="group" aria-label="Roadmap view">
+        <button type="button" data-view-button="timeline" aria-pressed="false">Timeline</button>
+        <button type="button" data-view-button="list" aria-pressed="false">List</button>
+      </div>
+    </div>
+
+    <div class="roadmap-overview-row">
+      <div class="roadmap-scope-status" id="roadmap-scope-status" aria-live="polite"></div>
       <div class="roadmap-summary" aria-label="Roadmap summary">
         <span><strong>{snapshot.milestones.length}</strong> milestones</span>
+        <span><strong>{completedMilestones}</strong> completed</span>
         <span><strong>{scheduledCount}</strong> scheduled</span>
-        <span><strong>{unscheduled.length}</strong> unscheduled</span>
       </div>
     </div>
 
@@ -39,34 +104,113 @@ const scheduledCount = snapshot.specs.filter((spec) => spec.milestone && spec.st
       </div>
     )}
 
-    <div class="roadmap-list">
-      {milestoneGroups.map((milestone) => {
-        const shipped = milestone.specs.filter((spec) => spec.state === "shipped").length;
-        const progress = milestone.specs.length ? Math.round((shipped / milestone.specs.length) * 100) : 0;
-        return (
-          <section class="roadmap-milestone" aria-labelledby={`milestone-${milestone.id}`}>
+    <div class="roadmap-filter-empty" id="roadmap-filter-empty" role="status" hidden>No milestones or work items match these filters.</div>
+
+    <section class="roadmap-panel" data-roadmap-panel="timeline" aria-label="Graphical roadmap timeline">
+      <div class="roadmap-legend" aria-label="Timeline legend">
+        <span><i data-milestone-status="active"></i>Active</span>
+        <span><i data-milestone-status="planned"></i>Planned</span>
+        <span><i data-milestone-status="completed"></i>Completed</span>
+        <span><i class="roadmap-branch-key"></i>Assigned work</span>
+      </div>
+      <div class="roadmap-timeline">
+        {groups.map((milestone) => (
+          <article
+            class="roadmap-timeline-node"
+            data-roadmap-group
+            data-milestone={milestone.id}
+            data-milestone-status={milestone.status}
+            data-search={searchText(milestone)}
+            data-spec-count={milestone.specs.length}
+          >
+            <div class="roadmap-timeline-date">
+              <span class="milestone-status" data-status={milestone.status}>{milestone.status}</span>
+              <span>{dateLabel(milestone)}</span>
+            </div>
+            <div class="roadmap-timeline-axis" aria-hidden="true"><span></span></div>
+            <div class="roadmap-timeline-card">
+              <header class="roadmap-milestone-header">
+                <div>
+                  <div class="roadmap-milestone-title">
+                    <h2>{milestone.label}</h2>
+                    <code>{milestone.id}</code>
+                  </div>
+                  {milestone.description && <p>{milestone.description}</p>}
+                </div>
+                <div class="roadmap-target">
+                  {milestone.startDate && <span>Start <time datetime={milestone.startDate}>{milestone.startDate}</time></span>}
+                  {milestone.targetDate && <span>Target <time datetime={milestone.targetDate}>{milestone.targetDate}</time></span>}
+                  {milestone.completedDate && <span>Delivered <time datetime={milestone.completedDate}>{milestone.completedDate}</time></span>}
+                </div>
+              </header>
+              <div class="roadmap-progress-row">
+                <div class="roadmap-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={milestone.progress} aria-label={`${milestone.label} completion`}>
+                  <span style={`width: ${milestone.progress}%`}></span>
+                </div>
+                <span>{milestone.shipped}/{milestone.specs.length} shipped</span>
+              </div>
+              {milestone.specs.length === 0 ? <p class="empty">No work is assigned to this milestone.</p> : (
+                <div class="roadmap-timeline-work">
+                  {milestone.specs.map((spec) => (
+                    <a
+                      class="roadmap-timeline-item"
+                      href={spec.href}
+                      data-roadmap-spec
+                      data-spec-state={spec.state}
+                      data-search={specSearchText(spec)}
+                    >
+                      <span class="roadmap-node-id">{spec.id}</span>
+                      <strong>{spec.title}</strong>
+                      <span>{spec.summary}</span>
+                      <small><span class="pill" data-status={spec.state}>{spec.state}</span>{spec.priority} · {spec.kind}</small>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="roadmap-panel" data-roadmap-panel="list" aria-label="Roadmap list" hidden>
+      <div class="roadmap-list">
+        {groups.map((milestone) => (
+          <article
+            class:list={["roadmap-milestone", milestone.id === "unscheduled" && "roadmap-unscheduled"]}
+            data-roadmap-group
+            data-milestone={milestone.id}
+            data-milestone-status={milestone.status}
+            data-search={searchText(milestone)}
+            data-spec-count={milestone.specs.length}
+          >
             <header class="roadmap-milestone-header">
               <div>
                 <div class="roadmap-milestone-title">
-                  <h2 id={`milestone-${milestone.id}`}>{milestone.label}</h2>
+                  <h2>{milestone.label}</h2>
+                  <span class="milestone-status" data-status={milestone.status}>{milestone.status}</span>
                   <code>{milestone.id}</code>
                 </div>
                 {milestone.description && <p>{milestone.description}</p>}
               </div>
-              <div class="roadmap-target">
-                {milestone.targetDate ? <><span>Target</span><time datetime={milestone.targetDate}>{milestone.targetDate}</time></> : <span>No target date</span>}
-              </div>
+              <div class="roadmap-target"><span>{dateLabel(milestone)}</span></div>
             </header>
             <div class="roadmap-progress-row">
-              <div class="roadmap-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress} aria-label={`${milestone.label} completion`}>
-                <span style={`width: ${progress}%`}></span>
+              <div class="roadmap-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={milestone.progress} aria-label={`${milestone.label} completion`}>
+                <span style={`width: ${milestone.progress}%`}></span>
               </div>
-              <span>{shipped}/{milestone.specs.length} shipped</span>
+              <span>{milestone.shipped}/{milestone.specs.length} shipped</span>
             </div>
             {milestone.specs.length === 0 ? <p class="empty">No work is assigned to this milestone.</p> : (
               <div class="roadmap-items">
                 {milestone.specs.map((spec) => (
-                  <a class="roadmap-item" href={spec.href}>
+                  <a
+                    class="roadmap-item"
+                    href={spec.href}
+                    data-roadmap-spec
+                    data-spec-state={spec.state}
+                    data-search={specSearchText(spec)}
+                  >
                     <span class="pill" data-status={spec.state}>{spec.state}</span>
                     <span class="roadmap-item-body">
                       <strong>{spec.id} · {spec.title}</strong>
@@ -78,34 +222,101 @@ const scheduledCount = snapshot.specs.filter((spec) => spec.milestone && spec.st
                 ))}
               </div>
             )}
-          </section>
-        );
-      })}
-
-      {unscheduled.length > 0 && (
-        <section class="roadmap-milestone roadmap-unscheduled" aria-labelledby="milestone-unscheduled">
-          <header class="roadmap-milestone-header">
-            <div>
-              <div class="roadmap-milestone-title"><h2 id="milestone-unscheduled">Unscheduled work</h2></div>
-              <p>Open work that has not yet been selected for a delivery milestone.</p>
-            </div>
-            <div class="roadmap-target"><span>{unscheduled.length} items</span></div>
-          </header>
-          <div class="roadmap-items">
-            {unscheduled.map((spec) => (
-              <a class="roadmap-item" href={spec.href}>
-                <span class="pill" data-status={spec.state}>{spec.state}</span>
-                <span class="roadmap-item-body">
-                  <strong>{spec.id} · {spec.title}</strong>
-                  <span>{spec.summary}</span>
-                  {spec.nextAction && <small>Next: {spec.nextAction}</small>}
-                </span>
-                <span class="roadmap-item-meta">{spec.priority} · {spec.kind}</span>
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
-    </div>
+          </article>
+        ))}
+      </div>
+    </section>
   </main>
+  <script>
+    const validScopes = new Set(["current", "all", "completed"]);
+    const validViews = new Set(["timeline", "list"]);
+    const params = new URLSearchParams(location.search);
+    let activeScope = validScopes.has(params.get("scope")) ? params.get("scope") : "current";
+    let activeView = validViews.has(params.get("view")) ? params.get("view") : "timeline";
+    const milestoneSelect = document.querySelector("#roadmap-milestone");
+    const stateSelect = document.querySelector("#roadmap-state");
+    const search = document.querySelector("#roadmap-search");
+    const status = document.querySelector("#roadmap-scope-status");
+    const empty = document.querySelector("#roadmap-filter-empty");
+    milestoneSelect.value = params.get("milestone") || "";
+    stateSelect.value = params.get("state") || "";
+    search.value = params.get("q") || "";
+
+    function updateUrl() {
+      const next = new URLSearchParams();
+      next.set("scope", activeScope);
+      next.set("view", activeView);
+      if (milestoneSelect.value) next.set("milestone", milestoneSelect.value);
+      if (stateSelect.value) next.set("state", stateSelect.value);
+      if (search.value.trim()) next.set("q", search.value.trim());
+      history.replaceState(null, "", `${location.pathname}?${next}`);
+    }
+
+    function groupMatchesScope(group) {
+      if (activeScope === "all") return true;
+      if (activeScope === "completed") return group.dataset.milestoneStatus === "completed";
+      return group.dataset.milestoneStatus !== "completed";
+    }
+
+    function filterGroup(group) {
+      const query = search.value.trim().toLowerCase();
+      const milestoneMatches = !milestoneSelect.value || group.dataset.milestone === milestoneSelect.value;
+      const scopeMatches = groupMatchesScope(group);
+      const groupSearchMatches = !query || group.dataset.search.includes(query);
+      let visibleSpecs = 0;
+      const specs = [...group.querySelectorAll("[data-roadmap-spec]")];
+      for (const spec of specs) {
+        const stateMatches = !stateSelect.value || spec.dataset.specState === stateSelect.value;
+        const searchMatches = groupSearchMatches || !query || spec.dataset.search.includes(query);
+        spec.hidden = !(stateMatches && searchMatches);
+        if (!spec.hidden) visibleSpecs += 1;
+      }
+      const workFilterActive = Boolean(stateSelect.value || query);
+      const workMatches = !workFilterActive || visibleSpecs > 0 || (Number(group.dataset.specCount) === 0 && groupSearchMatches);
+      group.hidden = !(milestoneMatches && scopeMatches && workMatches);
+      return !group.hidden;
+    }
+
+    function render() {
+      document.querySelectorAll("[data-scope-button]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.scopeButton === activeScope));
+      });
+      document.querySelectorAll("[data-view-button]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.viewButton === activeView));
+      });
+      document.querySelectorAll("[data-roadmap-panel]").forEach((panel) => {
+        panel.hidden = panel.dataset.roadmapPanel !== activeView;
+      });
+
+      const activePanel = document.querySelector(`[data-roadmap-panel="${activeView}"]`);
+      const visibleGroups = [...activePanel.querySelectorAll("[data-roadmap-group]")].filter(filterGroup).length;
+      document.querySelectorAll("[data-roadmap-panel]").forEach((panel) => {
+        if (panel !== activePanel) panel.querySelectorAll("[data-roadmap-group]").forEach(filterGroup);
+      });
+      const scopeLabel = activeScope === "current" ? "current roadmap" : activeScope === "completed" ? "completed history" : "complete roadmap";
+      status.textContent = `${visibleGroups} ${visibleGroups === 1 ? "milestone" : "milestones"} in ${scopeLabel}`;
+      empty.hidden = visibleGroups > 0;
+      updateUrl();
+    }
+
+    document.querySelectorAll("[data-scope-button]").forEach((button) => button.addEventListener("click", () => {
+      activeScope = button.dataset.scopeButton;
+      render();
+    }));
+    document.querySelectorAll("[data-view-button]").forEach((button) => button.addEventListener("click", () => {
+      activeView = button.dataset.viewButton;
+      render();
+    }));
+    milestoneSelect.addEventListener("change", render);
+    stateSelect.addEventListener("change", render);
+    search.addEventListener("input", render);
+    document.querySelector("#roadmap-clear").addEventListener("click", () => {
+      activeScope = "current";
+      milestoneSelect.value = "";
+      stateSelect.value = "";
+      search.value = "";
+      render();
+    });
+    render();
+  </script>
 </BaseLayout>

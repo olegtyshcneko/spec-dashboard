@@ -15,7 +15,7 @@ Inspect the installed `spec-dashboard` version and the Git ref in the active plu
 Test the tagged CLI independently:
 
 ```sh
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.6.0 \
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.7.0 \
   specdash --version
 ```
 
@@ -33,7 +33,7 @@ codex plugin list --json
 Install again when either entry is missing:
 
 ```sh
-codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.6.0
+codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.7.0
 codex plugin add spec-dashboard@spec-dashboard
 ```
 
@@ -54,7 +54,7 @@ Node.js must be version 22.12 or newer because the renderer uses Astro 7. The fi
 Run the exact MCP command from the target repository:
 
 ```sh
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.6.0 \
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.7.0 \
   specdash-mcp --root .
 ```
 
@@ -90,7 +90,7 @@ ENOENT: no such file or directory, open '.../specdash.config.yaml'
 Use the bootstrap skill or initialize with the CLI:
 
 ```sh
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.6.0 \
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.7.0 \
   specdash init --root .
 ```
 
@@ -103,7 +103,7 @@ If initialization reports that the project already exists, inspect the existing 
 Run machine-readable validation:
 
 ```sh
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.6.0 \
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.7.0 \
   specdash validate --root . --json
 ```
 
@@ -257,8 +257,8 @@ npm --version
 git status --short
 git rev-parse HEAD
 codex plugin list --json
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.6.0 specdash --version
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.6.0 specdash validate --root . --json
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.7.0 specdash --version
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.7.0 specdash validate --root . --json
 ```
 
 Also include the failing MCP tool name, input with secrets removed, exact error, target project layout, and the Git ref used by the MCP package.

@@ -33,7 +33,7 @@ Every entry has versioned frontmatter. The core validates schema, category, mile
 Install the versioned marketplace and plugin:
 
 ```sh
-codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.6.0
+codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.7.0
 codex plugin add spec-dashboard@spec-dashboard
 ```
 
@@ -79,7 +79,7 @@ The generated site includes:
 - overview counts for active, blocked, ready, backlog, review, and shipped work;
 - URL-backed filtering by text, state, kind, priority, milestone, category, and owner;
 - task progress derived from Markdown checklists;
-- an ordered milestone roadmap with delivery progress and unscheduled work;
+- a filter-first milestone roadmap with switchable vertical timeline/list views, delivery progress, completed history, and unscheduled work;
 - dependency, related-entry, and backlink views;
 - a graphical Map/List relationship explorer with category, lifecycle, neighborhood, and zoom controls;
 - a health page for schema and readiness diagnostics;
@@ -158,8 +158,17 @@ milestones:
   - id: next-release
     label: Next release
     description: Reviewed work selected for the next delivery.
+    status: active # planned, active, or completed
+    startDate: 2026-07-15 # optional
     targetDate: 2026-08-15 # optional planning signal
+  - id: v1-0
+    label: v1.0
+    status: completed
+    startDate: 2026-06-01
+    completedDate: 2026-07-01 # required for completed milestones
 ```
+
+The roadmap opens on current milestones. Readers can reveal all or only completed milestones in one click, narrow by milestone or work state, search, and switch between the graphical timeline and compact list without losing URL-backed scope.
 
 ## Git reconciliation and automation
 

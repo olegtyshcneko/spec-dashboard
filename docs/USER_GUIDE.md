@@ -46,7 +46,7 @@ Spec Dashboard is not a passive documentation daemon. Skills activate when a use
 Run these commands once:
 
 ```sh
-codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.6.0
+codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.7.0
 codex plugin add spec-dashboard@spec-dashboard
 ```
 
@@ -173,18 +173,25 @@ milestones:
   - id: next-release
     label: Next release
     description: Reviewed work selected for the next delivery.
+    status: active
+    startDate: 2026-07-15
     targetDate: 2026-08-15
-  - id: later
-    label: Later
+  - id: previous-release
+    label: Previous release
+    status: completed
+    startDate: 2026-06-01
+    completedDate: 2026-07-01
 ```
 
-`targetDate` is optional and must use `YYYY-MM-DD`. Assign a specification with the configured ID:
+`status` is `planned`, `active`, or `completed` and defaults to `planned`. `startDate` and `targetDate` are optional; a completed milestone requires `completedDate`. Every date uses `YYYY-MM-DD`, and completion/target dates cannot precede the start. Assign a specification with the configured ID:
 
 ```yaml
 milestone: next-release
 ```
 
-Unknown IDs and duplicate milestone declarations fail validation. The roadmap follows configuration order, includes every non-archived item assigned to a milestone, and separately surfaces open unscheduled work. Shipped work without a milestone does not clutter the unscheduled queue.
+Unknown IDs, duplicate milestone declarations, and invalid milestone date/status combinations fail validation. The roadmap follows configuration order, includes every non-archived item assigned to a milestone, and separately surfaces open unscheduled work. Shipped work without a milestone does not clutter the unscheduled queue.
+
+The roadmap puts scope controls before its content. It defaults to `Current`, while `All` and `Completed` reveal historical delivery in one click. Milestone, work-state, and search filters apply to both the graphical vertical timeline and compact list; filters and view choice are retained in the URL.
 
 After the configuration is reviewed in Git, use the capture workflow to assign work:
 
@@ -214,10 +221,10 @@ Ask Codex:
 Or use the tagged CLI directly:
 
 ```sh
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.6.0 \
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.7.0 \
   specdash validate --root .
 
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.6.0 \
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.7.0 \
   specdash build --root .
 ```
 
@@ -239,7 +246,7 @@ The generated dashboard provides:
 - Counts and filters for active, blocked, ready, backlog, review, and shipped work.
 - Search and URL-backed filters by ID, title, summary, milestone, category, owner, or tag.
 - Checklist progress derived from Markdown.
-- A roadmap that groups delivery scope by configured milestone and calls out unscheduled open work.
+- A filter-first roadmap with Current/All/Completed scope, milestone/work-state/search filters, and switchable vertical timeline/list views.
 - Health diagnostics for invalid, stale, or operationally incomplete entries.
 - Knowledge pages connected to specifications by generated backlinks.
 - A relationship Map/List switcher with category, lifecycle, and neighborhood scoping.

@@ -20,6 +20,7 @@ export const itemStateSchema = z.enum([
   "archived",
 ]);
 export const prioritySchema = z.enum(["p0", "p1", "p2", "p3"]);
+export const milestoneStatusSchema = z.enum(["planned", "active", "completed"]);
 export const knowledgeKindSchema = z.enum([
   "research",
   "adr",
@@ -40,7 +41,39 @@ export const milestoneSchema = z.object({
   id: boundedIdSchema,
   label: z.string().min(1),
   description: z.string().min(1).optional(),
+  status: milestoneStatusSchema.default("planned"),
+  startDate: dateSchema.optional(),
   targetDate: dateSchema.optional(),
+  completedDate: dateSchema.optional(),
+}).superRefine((milestone, context) => {
+  if (milestone.startDate && milestone.targetDate && milestone.startDate > milestone.targetDate) {
+    context.addIssue({
+      code: "custom",
+      path: ["targetDate"],
+      message: "Target date must not be earlier than start date",
+    });
+  }
+  if (milestone.startDate && milestone.completedDate && milestone.startDate > milestone.completedDate) {
+    context.addIssue({
+      code: "custom",
+      path: ["completedDate"],
+      message: "Completion date must not be earlier than start date",
+    });
+  }
+  if (milestone.status === "completed" && !milestone.completedDate) {
+    context.addIssue({
+      code: "custom",
+      path: ["completedDate"],
+      message: "Completed milestones require a completion date",
+    });
+  }
+  if (milestone.status !== "completed" && milestone.completedDate) {
+    context.addIssue({
+      code: "custom",
+      path: ["completedDate"],
+      message: "Only completed milestones can declare a completion date",
+    });
+  }
 });
 
 const commonFields = {

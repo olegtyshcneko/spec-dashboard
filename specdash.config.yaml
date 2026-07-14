@@ -17,6 +17,49 @@ categories:
   - id: experience
     label: Experience
 milestones:
+  - id: v0-1-0
+    label: v0.1.0 · MDX compiler
+    description: Portable static output and the validated MDX content model.
+    status: completed
+    startDate: 2026-05-12
+    completedDate: 2026-07-11
+  - id: v0-2-0
+    label: v0.2.0 · Dashboard intelligence
+    description: Operational state views, filters, progress, and health diagnostics.
+    status: completed
+    startDate: 2026-07-11
+    completedDate: 2026-07-11
+  - id: v0-3-0
+    label: v0.3.0 · MCP server
+    description: Project-scoped resources and preview-first content mutations.
+    status: completed
+    startDate: 2026-07-11
+    completedDate: 2026-07-11
+  - id: v0-4-0
+    label: v0.4.0 · Codex plugin
+    description: Packaged MCP configuration and focused reusable workflows.
+    status: completed
+    startDate: 2026-07-11
+    completedDate: 2026-07-11
+  - id: v0-5-0
+    label: v0.5.0 · Reconciliation and CI
+    description: Git evidence, lifecycle suggestions, automation, and Pages publishing.
+    status: completed
+    startDate: 2026-07-11
+    completedDate: 2026-07-11
+  - id: v0-6-0
+    label: v0.6.0 · Milestone roadmap
+    description: Validated delivery milestones, roadmap groups, and milestone queries.
+    status: completed
+    startDate: 2026-07-12
+    completedDate: 2026-07-14
+  - id: v0-7-0
+    label: v0.7.0 · Graphical roadmap
+    description: Filter-first vertical timeline, historical releases, and list switching.
+    status: completed
+    startDate: 2026-07-14
+    completedDate: 2026-07-14
   - id: next-release
     label: Next release
-    description: Reviewed work intended for the next versioned delivery.
+    description: Planned work intended for the next versioned delivery.
+    status: planned

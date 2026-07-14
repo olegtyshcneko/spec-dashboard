@@ -82,6 +82,8 @@ milestones:
   - id: next-release
     label: Next release
     description: Work selected for the next delivery.
+    status: active
+    startDate: 2026-07-15
     targetDate: 2026-08-01
 `);
   fs.writeFileSync(path.join(root, "content/specs/scheduled.mdx"), `---
@@ -112,6 +114,8 @@ Body.
     id: "next-release",
     label: "Next release",
     description: "Work selected for the next delivery.",
+    status: "active",
+    startDate: "2026-07-15",
     targetDate: "2026-08-01",
   }]);
 
@@ -141,6 +145,69 @@ Body.
     label: Duplicate next release
 `);
   assert.ok(loadProject(root).diagnostics.some((diagnostic) => diagnostic.code === "duplicate-milestone"));
+});
+
+test("validates milestone lifecycle dates and defaults status", () => {
+  const root = fixture();
+  fs.appendFileSync(path.join(root, "specdash.config.yaml"), `
+milestones:
+  - id: later
+    label: Later
+    startDate: 2026-09-01
+    targetDate: 2026-08-01
+`);
+
+  assert.throws(
+    () => loadProject(root),
+    /Target date must not be earlier than start date/,
+  );
+
+  fs.writeFileSync(path.join(root, "specdash.config.yaml"), `
+schemaVersion: 1
+project:
+  name: Test
+contentDir: content
+outputDir: dist
+categories: []
+milestones:
+  - id: released
+    label: Released
+    status: completed
+`);
+  assert.throws(
+    () => loadProject(root),
+    /Completed milestones require a completion date/,
+  );
+
+  fs.writeFileSync(path.join(root, "specdash.config.yaml"), `
+schemaVersion: 1
+project:
+  name: Test
+contentDir: content
+outputDir: dist
+categories: []
+milestones:
+  - id: later
+    label: Later
+    completedDate: 2026-09-01
+`);
+  assert.throws(
+    () => loadProject(root),
+    /Only completed milestones can declare a completion date/,
+  );
+
+  fs.writeFileSync(path.join(root, "specdash.config.yaml"), `
+schemaVersion: 1
+project:
+  name: Test
+contentDir: content
+outputDir: dist
+categories: []
+milestones:
+  - id: later
+    label: Later
+`);
+  assert.equal(loadProject(root).config.milestones[0]?.status, "planned");
 });
 
 test("derives task progress, graph edges, and readiness diagnostics", () => {

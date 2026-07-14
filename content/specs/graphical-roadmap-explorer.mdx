@@ -1,0 +1,70 @@
+---
+schemaVersion: 1
+id: SPEC-008
+title: Graphical roadmap explorer
+summary: Explore current and historical delivery milestones through a filterable vertical timeline or compact list.
+kind: feature
+state: shipped
+priority: p1
+milestone: v0-7-0
+categories: [experience, platform]
+tags: [roadmap, timeline, filters, visualization]
+owners: [maintainer]
+blockers: []
+dependsOn: [SPEC-007]
+related: [SPEC-003]
+sourceRefs:
+  - type: file
+    value: packages/renderer/src/pages/roadmap/index.astro
+  - type: file
+    value: packages/renderer/src/styles/global.css
+  - type: file
+    value: packages/core/src/schema.ts
+  - type: file
+    value: packages/core/test/core.test.mjs
+  - type: file
+    value: specdash.config.yaml
+  - type: url
+    value: https://github.com/olegtyshcneko/spec-dashboard/tree/v0.7.0
+    label: v0.7.0 release tag
+created: 2026-07-14
+updated: 2026-07-14
+featured: true
+---
+
+## Intent
+
+Make delivery history and upcoming work understandable at a glance while keeping the static roadmap useful for both focused planning and historical review.
+
+## Acceptance criteria
+
+- [x] Put roadmap scope filters before the visualization and make current, all, and completed milestone views one click away.
+- [x] Switch between a compact list and a graphical vertical timeline without losing the active filters.
+- [x] Render milestone status, date range, progress, and assigned specifications from the validated project snapshot.
+- [x] Keep completed milestones and shipped work available through filters while focusing the default view on current delivery.
+- [x] Persist roadmap filters and view choice in the URL and provide a responsive, accessible empty state.
+- [x] Model this repository's tagged release history as completed example milestones and document the extended milestone contract.
+- [x] Validate date and status metadata, cover the new schema behavior, and pass the production build.
+
+## Plan
+
+1. Extend milestone configuration with status, start date, and completion date metadata.
+2. Add historical release milestones and assign existing specifications using repository tag evidence.
+3. Build filter-first roadmap controls plus list and vertical timeline renderings.
+4. Add schema coverage, documentation, and rendered-output verification.
+
+## Verification
+
+- Twelve automated tests pass across core and MCP packages.
+- Dashboard validation reports eight specifications, one knowledge entry, and zero diagnostics.
+- The GitHub Pages subpath build produces fourteen static pages.
+- Desktop and mobile timeline views plus a fully URL-filtered historical list view were inspected in Firefox.
+
+## Risks
+
+- Milestone status can drift from release reality if maintainers do not update it with delivery evidence.
+- Dense projects need filtering and responsive layouts to keep the timeline readable.
+
+## Out of scope
+
+Capacity estimation, drag-and-drop editing, automatic Git tag imports, and calendar scheduling.
