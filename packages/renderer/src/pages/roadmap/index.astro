@@ -17,6 +17,8 @@ const milestoneGroups = snapshot.milestones.map((milestone) => {
     specs,
     shipped,
     progress: specs.length ? Math.round((shipped / specs.length) * 100) : 0,
+    dateStart: milestone.startDate ?? milestone.completedDate ?? milestone.targetDate,
+    dateEnd: milestone.completedDate ?? milestone.targetDate ?? milestone.startDate,
   };
 });
 const unscheduledSpecs = sortSpecs(snapshot.specs.filter((spec) => !spec.milestone && !["shipped", "archived"].includes(spec.state)));
@@ -132,6 +134,8 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
             data-roadmap-group
             data-milestone={milestone.id}
             data-milestone-status={milestone.status}
+            data-date-start={milestone.dateStart}
+            data-date-end={milestone.dateEnd}
             data-search={searchText(milestone)}
             data-spec-count={milestone.specs.length}
             data-latest-completed={latestCompleted && milestone.id === latestCompleted.id ? "true" : undefined}
@@ -201,6 +205,8 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
             data-roadmap-group
             data-milestone={milestone.id}
             data-milestone-status={milestone.status}
+            data-date-start={milestone.dateStart}
+            data-date-end={milestone.dateEnd}
             data-search={searchText(milestone)}
             data-spec-count={milestone.specs.length}
             data-latest-completed={latestCompleted && milestone.id === latestCompleted.id ? "true" : undefined}
