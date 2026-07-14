@@ -38,12 +38,18 @@ const scheduledCount = snapshot.specs.filter((spec) => spec.milestone && spec.st
 const completedMilestones = milestoneGroups.filter((milestone) => milestone.status === "completed").length;
 const lifecycleStates = [...new Set(snapshot.specs.filter((spec) => spec.state !== "archived").map((spec) => spec.state))].sort();
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const fmtDate = (iso) => {
+  if (!iso) return "";
+  const [year, month, day] = iso.split("-").map(Number);
+  return `${MONTHS[month - 1]} ${day}, ${year}`;
+};
 const dateLabel = (milestone) => {
-  if (milestone.completedDate) return `Completed ${milestone.completedDate}`;
-  if (milestone.startDate && milestone.targetDate) return `${milestone.startDate} → ${milestone.targetDate}`;
-  if (milestone.targetDate) return `Target ${milestone.targetDate}`;
-  if (milestone.startDate) return `Started ${milestone.startDate}`;
-  return "Date not set";
+  if (milestone.completedDate) return `Completed ${fmtDate(milestone.completedDate)}`;
+  if (milestone.startDate && milestone.targetDate) return `${fmtDate(milestone.startDate)} → ${fmtDate(milestone.targetDate)}`;
+  if (milestone.targetDate) return `Target ${fmtDate(milestone.targetDate)}`;
+  if (milestone.startDate) return `Started ${fmtDate(milestone.startDate)}`;
+  return "No date yet";
 };
 const searchText = (milestone) => [milestone.id, milestone.label, milestone.description || ""].join(" ").toLowerCase();
 const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state, spec.kind, spec.priority, ...(spec.categories || []), ...(spec.tags || [])].join(" ").toLowerCase();
@@ -96,8 +102,8 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
       <div class="roadmap-scope-status" id="roadmap-scope-status" aria-live="polite"></div>
       <div class="roadmap-summary" aria-label="Roadmap summary">
         <span><strong>{snapshot.milestones.length}</strong> milestones</span>
-        <span><strong>{completedMilestones}</strong> completed</span>
-        <span><strong>{scheduledCount}</strong> scheduled</span>
+        <span><strong>{completedMilestones}</strong> delivered</span>
+        <span><strong>{scheduledCount}</strong> specs scheduled</span>
       </div>
     </div>
 
@@ -129,8 +135,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
             data-latest-completed={latestCompleted && milestone.id === latestCompleted.id ? "true" : undefined}
           >
             <div class="roadmap-timeline-date">
-              <span class="milestone-status" data-status={milestone.status}>{milestone.status}</span>
-              <span>{dateLabel(milestone)}</span>
+              <span>{milestone.completedDate ? fmtDate(milestone.completedDate) : milestone.targetDate ? fmtDate(milestone.targetDate) : milestone.startDate ? fmtDate(milestone.startDate) : "No date"}</span>
             </div>
             <div class="roadmap-timeline-axis" aria-hidden="true"><span></span></div>
             <details class="roadmap-timeline-card" open={milestone.status !== "completed"}>
@@ -145,9 +150,14 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
                     {milestone.description && <span class="roadmap-milestone-desc">{milestone.description}</span>}
                   </span>
                   <span class="roadmap-target">
-                    {milestone.startDate && <span>Start <time datetime={milestone.startDate}>{milestone.startDate}</time></span>}
-                    {milestone.targetDate && <span>Target <time datetime={milestone.targetDate}>{milestone.targetDate}</time></span>}
-                    {milestone.completedDate && <span>Delivered <time datetime={milestone.completedDate}>{milestone.completedDate}</time></span>}
+                    {milestone.status === "completed"
+                      ? milestone.completedDate && <span>Shipped <time datetime={milestone.completedDate}>{fmtDate(milestone.completedDate)}</time></span>
+                      : (
+                        <>
+                          {milestone.startDate && <span>Started <time datetime={milestone.startDate}>{fmtDate(milestone.startDate)}</time></span>}
+                          {milestone.targetDate && <span>Target <time datetime={milestone.targetDate}>{fmtDate(milestone.targetDate)}</time></span>}
+                        </>
+                      )}
                   </span>
                 </span>
                 <span class="roadmap-progress-row">
@@ -310,8 +320,9 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
       document.querySelectorAll("[data-roadmap-panel]").forEach((panel) => {
         if (panel !== activePanel) panel.querySelectorAll("[data-roadmap-group]").forEach(filterGroup);
       });
-      const scopeLabel = activeScope === "current" ? "current roadmap" : activeScope === "completed" ? "completed history" : "complete roadmap";
-      status.textContent = `${visibleGroups} ${visibleGroups === 1 ? "milestone" : "milestones"} in ${scopeLabel}`;
+      const scopeLabel = activeScope === "current" ? "current delivery" : activeScope === "completed" ? "completed history" : "full roadmap";
+      const totalGroups = activePanel.querySelectorAll("[data-roadmap-group]").length;
+      status.textContent = `Showing ${visibleGroups} of ${totalGroups} milestones · ${scopeLabel}`;
       empty.hidden = visibleGroups > 0;
       updateUrl();
     }
