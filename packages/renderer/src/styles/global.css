@@ -547,6 +547,8 @@ details.roadmap-timeline-card:not([open]) { margin-bottom: 10px; }
 
 details.roadmap-timeline-card:not([open]) .roadmap-milestone-header p,
 details.roadmap-milestone:not([open]) .roadmap-milestone-header p,
+details.roadmap-timeline-card:not([open]) .roadmap-milestone-desc,
+details.roadmap-milestone:not([open]) .roadmap-milestone-desc,
 details.roadmap-timeline-card:not([open]) .roadmap-target,
 details.roadmap-milestone:not([open]) .roadmap-target { display: none; }
 
@@ -631,7 +633,7 @@ details.roadmap-milestone[data-milestone-status="active"] {
 
 .roadmap-milestone-title { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .roadmap-milestone-title h2 { margin: 0; font-size: 20px; }
-.roadmap-milestone-header p { max-width: 68ch; margin: 5px 0 0; color: var(--text-muted); font-size: 13px; }
+.roadmap-milestone-header p, .roadmap-milestone-desc { display: block; max-width: 68ch; margin: 5px 0 0; color: var(--text-muted); font-size: 13px; }
 .roadmap-target { display: grid; color: var(--text-faint); font-size: 11px; text-align: right; white-space: nowrap; }
 .roadmap-target span { display: grid; }
 .roadmap-target time { color: var(--text); font-family: var(--font-mono); font-size: 12px; }
@@ -646,7 +648,7 @@ details.roadmap-milestone[data-milestone-status="active"] {
   font-size: 10px;
 }
 
-.roadmap-progress { height: 5px; overflow: hidden; background: var(--surface-muted); border-radius: 999px; }
+.roadmap-progress { display: block; height: 5px; overflow: hidden; background: var(--surface-muted); border-radius: 999px; }
 .roadmap-progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--gold-soft), var(--s-implemented-fg)); border-radius: inherit; }
 .roadmap-items { display: grid; gap: 7px; }
 .roadmap-item {

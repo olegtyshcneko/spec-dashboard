@@ -130,26 +130,26 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
             <div class="roadmap-timeline-axis" aria-hidden="true"><span></span></div>
             <details class="roadmap-timeline-card" open={milestone.status !== "completed"}>
               <summary>
-                <header class="roadmap-milestone-header">
-                  <div>
-                    <div class="roadmap-milestone-title">
+                <span class="roadmap-milestone-header">
+                  <span>
+                    <span class="roadmap-milestone-title">
                       <h2>{milestone.label}</h2>
                       <code>{milestone.id}</code>
-                    </div>
-                    {milestone.description && <p>{milestone.description}</p>}
-                  </div>
-                  <div class="roadmap-target">
+                    </span>
+                    {milestone.description && <span class="roadmap-milestone-desc">{milestone.description}</span>}
+                  </span>
+                  <span class="roadmap-target">
                     {milestone.startDate && <span>Start <time datetime={milestone.startDate}>{milestone.startDate}</time></span>}
                     {milestone.targetDate && <span>Target <time datetime={milestone.targetDate}>{milestone.targetDate}</time></span>}
                     {milestone.completedDate && <span>Delivered <time datetime={milestone.completedDate}>{milestone.completedDate}</time></span>}
-                  </div>
-                </header>
-                <div class="roadmap-progress-row">
-                  <div class="roadmap-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={milestone.progress} aria-label={`${milestone.label} completion`}>
+                  </span>
+                </span>
+                <span class="roadmap-progress-row">
+                  <span class="roadmap-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={milestone.progress} aria-label={`${milestone.label} completion`}>
                     <span style={`width: ${milestone.progress}%`}></span>
-                  </div>
+                  </span>
                   <span>{milestone.shipped}/{milestone.specs.length} shipped</span>
-                </div>
+                </span>
               </summary>
               {milestone.specs.length === 0 ? <p class="empty">No work is assigned to this milestone.</p> : (
                 <div class="roadmap-timeline-work">
@@ -188,23 +188,23 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
             data-spec-count={milestone.specs.length}
           >
             <summary>
-            <header class="roadmap-milestone-header">
-              <div>
-                <div class="roadmap-milestone-title">
+            <span class="roadmap-milestone-header">
+              <span>
+                <span class="roadmap-milestone-title">
                   <h2>{milestone.label}</h2>
                   <span class="milestone-status" data-status={milestone.status}>{milestone.status}</span>
                   <code>{milestone.id}</code>
-                </div>
-                {milestone.description && <p>{milestone.description}</p>}
-              </div>
-              <div class="roadmap-target"><span>{dateLabel(milestone)}</span></div>
-            </header>
-            <div class="roadmap-progress-row">
-              <div class="roadmap-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={milestone.progress} aria-label={`${milestone.label} completion`}>
+                </span>
+                {milestone.description && <span class="roadmap-milestone-desc">{milestone.description}</span>}
+              </span>
+              <span class="roadmap-target"><span>{dateLabel(milestone)}</span></span>
+            </span>
+            <span class="roadmap-progress-row">
+              <span class="roadmap-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={milestone.progress} aria-label={`${milestone.label} completion`}>
                 <span style={`width: ${milestone.progress}%`}></span>
-              </div>
+              </span>
               <span>{milestone.shipped}/{milestone.specs.length} shipped</span>
-            </div>
+            </span>
             </summary>
             {milestone.specs.length === 0 ? <p class="empty">No work is assigned to this milestone.</p> : (
               <div class="roadmap-items">
