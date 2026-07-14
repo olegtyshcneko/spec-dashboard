@@ -65,10 +65,13 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
     </div>
 
     <div class="roadmap-toolbar" aria-label="Roadmap controls">
-      <div class="roadmap-scope-switch" role="group" aria-label="Milestone scope">
-        <button type="button" data-scope-button="current" aria-pressed="false">Current</button>
-        <button type="button" data-scope-button="all" aria-pressed="false">All</button>
-        <button type="button" data-scope-button="completed" aria-pressed="false">Completed</button>
+      <div class="roadmap-control">
+        <span class="roadmap-control-label" id="roadmap-scope-label">Scope</span>
+        <div class="roadmap-scope-switch" role="group" aria-labelledby="roadmap-scope-label">
+          <button type="button" data-scope-button="current" aria-pressed="false">Current</button>
+          <button type="button" data-scope-button="all" aria-pressed="false">All</button>
+          <button type="button" data-scope-button="completed" aria-pressed="false">Completed</button>
+        </div>
       </div>
 
       <label>Milestone
@@ -91,15 +94,14 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
       </label>
 
       <button type="button" class="roadmap-clear" id="roadmap-clear">Clear filters</button>
-
-      <div class="roadmap-view-switch" role="group" aria-label="Roadmap view">
-        <button type="button" data-view-button="timeline" aria-pressed="false">Timeline</button>
-        <button type="button" data-view-button="list" aria-pressed="false">List</button>
-      </div>
     </div>
 
     <div class="roadmap-overview-row">
       <div class="roadmap-scope-status" id="roadmap-scope-status" aria-live="polite"></div>
+      <div class="roadmap-view-switch" role="group" aria-label="Roadmap view">
+        <button type="button" data-view-button="timeline" aria-pressed="false">Timeline</button>
+        <button type="button" data-view-button="list" aria-pressed="false">List</button>
+      </div>
       <div class="roadmap-summary" aria-label="Roadmap summary">
         <span><strong>{snapshot.milestones.length}</strong> milestones</span>
         <span><strong>{completedMilestones}</strong> delivered</span>
@@ -261,6 +263,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
     const search = document.querySelector("#roadmap-search");
     const status = document.querySelector("#roadmap-scope-status");
     const empty = document.querySelector("#roadmap-filter-empty");
+    const clearButton = document.querySelector("#roadmap-clear");
     milestoneSelect.value = params.get("milestone") || "";
     stateSelect.value = params.get("state") || "";
     search.value = params.get("q") || "";
@@ -324,6 +327,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
       const totalGroups = activePanel.querySelectorAll("[data-roadmap-group]").length;
       status.textContent = `Showing ${visibleGroups} of ${totalGroups} milestones · ${scopeLabel}`;
       empty.hidden = visibleGroups > 0;
+      clearButton.disabled = activeScope === "current" && !milestoneSelect.value && !stateSelect.value && !search.value.trim();
       updateUrl();
     }
 
@@ -338,7 +342,7 @@ const specSearchText = (spec) => [spec.id, spec.title, spec.summary, spec.state,
     milestoneSelect.addEventListener("change", render);
     stateSelect.addEventListener("change", render);
     search.addEventListener("input", render);
-    document.querySelector("#roadmap-clear").addEventListener("click", () => {
+    clearButton.addEventListener("click", () => {
       activeScope = "current";
       milestoneSelect.value = "";
       stateSelect.value = "";
