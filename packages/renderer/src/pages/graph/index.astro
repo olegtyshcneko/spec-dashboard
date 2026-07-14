@@ -54,8 +54,8 @@ function wrapText(value: string, maxCharacters: number): string[] {
 
 const nodePresentation = new Map(entries.map((entry) => {
   const state = "state" in entry.data ? entry.data.state : "knowledge";
-  const titleLines = wrapText(entry.data.title, 25);
-  const metaLines = wrapText(`${state} · ${entry.data.categories.join(", ")}`, 35);
+  const titleLines = wrapText(entry.data.title, 23);
+  const metaLines = wrapText(`${state} · ${entry.data.categories.join(", ")}`, 32);
   const metaY = titleY + (titleLines.length - 1) * titleLineHeight + 22;
   const height = metaY + (metaLines.length - 1) * metaLineHeight + 17;
   return [entry.id, { state, titleLines, metaLines, metaY, height }];

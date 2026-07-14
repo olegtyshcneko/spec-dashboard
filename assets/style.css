@@ -1,5 +1,29 @@
 /* Spec Dashboard — shared dark theme. */
 
+/* Self-hosted variable fonts (SIL OFL 1.1, see assets/fonts/). Latin subsets;
+   system stacks below remain as fallback for other scripts. */
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  font-style: italic;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("fonts/atkinson-hyperlegible-next-latin-wght-italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url("fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2");
+}
+
 :root {
   color-scheme: dark;
   --bg: #090d12;
@@ -43,8 +67,8 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.38), 0 8px 24px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.32), 0 3px 8px rgba(0, 0, 0, 0.24);
 
-  --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-body: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --font-display: var(--font-mono);
 }
 
@@ -56,7 +80,7 @@ html, body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
@@ -117,14 +141,14 @@ code {
 }
 .site-header h1 {
   margin: 0;
-  font-size: 22px;
+  font-size: 23px;
   letter-spacing: -0.01em;
 }
 .site-header .subtitle {
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 14px;
 }
-.site-header nav { display: flex; gap: 14px; font-size: 13px; align-items: center; }
+.site-header nav { display: flex; gap: 14px; font-size: 14px; align-items: center; }
 .site-header nav a { color: var(--text-muted); }
 .site-header nav a:hover { color: var(--accent); }
 .site-header nav a.nav-cta {
@@ -170,7 +194,7 @@ code {
 }
 .kb-hero-eyebrow {
   margin: 0 0 12px;
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.22em;
   color: var(--gold);
@@ -188,7 +212,7 @@ code {
 }
 .kb-hero h2 {
   margin: 0;
-  font-size: 34px;
+  font-size: 36px;
   line-height: 1.1;
   letter-spacing: -0.025em;
   font-weight: 700;
@@ -201,7 +225,7 @@ code {
 }
 .kb-hero-lede {
   margin: 0;
-  font-size: 14.5px;
+  font-size: 15.5px;
   line-height: 1.65;
   color: var(--text-muted);
   max-width: 46ch;
@@ -236,7 +260,7 @@ code {
   justify-content: space-between;
   align-items: baseline;
   gap: 12px;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--text);
@@ -244,13 +268,13 @@ code {
 .kb-entry-card .kb-entry-title .arrow {
   color: var(--accent);
   font-weight: 400;
-  font-size: 18px;
+  font-size: 19px;
   transition: transform 140ms ease;
 }
 .kb-entry-card:hover .kb-entry-title .arrow { transform: translateX(2px); }
 .kb-entry-card .kb-entry-summary {
   margin: 0;
-  font-size: 13.5px;
+  font-size: 14.5px;
   line-height: 1.6;
   color: var(--text-muted);
 }
@@ -261,7 +285,7 @@ code {
   margin-top: 2px;
 }
 .kb-entry-card .kb-entry-tags .tag {
-  font-size: 11px;
+  font-size: 12px;
   padding: 1px 9px;
   border-radius: 999px;
   background: rgba(217, 119, 6, 0.08);
@@ -288,7 +312,7 @@ code {
 @media (max-width: 760px) {
   .kb-hero { padding: 26px 22px; }
   .kb-hero-head { grid-template-columns: 1fr; gap: 14px; margin-bottom: 20px; }
-  .kb-hero h2 { font-size: 26px; }
+  .kb-hero h2 { font-size: 28px; }
 }
 
 /* ---------- Filters ---------- */
@@ -318,7 +342,7 @@ code {
 .filters input[type="search"]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {
-  font-size: 12px;
+  font-size: 13px;
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid var(--border-strong);
@@ -348,7 +372,7 @@ code {
   align-items: center;
   gap: 10px;
   margin: 0 0 10px 0;
-  font-size: 12px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   color: var(--text-faint);
@@ -370,7 +394,7 @@ code {
 }
 .rail-list .when {
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -389,7 +413,7 @@ code {
   border: none;
   background: transparent;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-muted);
   cursor: pointer;
@@ -410,7 +434,7 @@ code {
 }
 .status-tab .tab-count {
   margin-left: 7px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-faint);
   font-variant-numeric: tabular-nums;
   font-weight: 500;
@@ -447,14 +471,14 @@ code {
 .spec-row .pill { margin-top: 2px; }
 .spec-row-body { min-width: 0; }
 .spec-row-title {
-  font-size: 14.5px;
+  font-size: 15.5px;
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.005em;
 }
 .spec-row:hover .spec-row-title { color: var(--accent); }
 .spec-row-summary {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-muted);
   line-height: 1.5;
   margin-top: 2px;
@@ -468,7 +492,7 @@ code {
   display: flex;
   gap: 12px;
   align-items: center;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-faint);
   white-space: nowrap;
   padding-top: 3px;
@@ -478,7 +502,7 @@ code {
   border: none;
   padding: 0;
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: 13px;
   border-radius: 0;
 }
 .spec-row-meta .when { font-variant-numeric: tabular-nums; }
@@ -499,7 +523,7 @@ code {
   align-items: center;
   gap: 16px;
   margin-top: 18px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-muted);
 }
 .pager-btn {
@@ -508,7 +532,7 @@ code {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
@@ -541,7 +565,7 @@ code {
   align-items: center;
   gap: 12px;
   margin: 0;
-  font-size: 18px;
+  font-size: 19px;
   letter-spacing: -0.01em;
 }
 .section-head h2::before {
@@ -553,13 +577,13 @@ code {
 }
 .section-head .count {
   color: var(--text-faint);
-  font-size: 13px;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
 .section-head .blurb {
   margin-left: auto;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .card-grid {
@@ -592,7 +616,7 @@ code {
 }
 .card h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
@@ -601,7 +625,7 @@ code {
 .card p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 13.5px;
+  font-size: 14.5px;
   line-height: 1.5;
 }
 .card-meta {
@@ -611,11 +635,11 @@ code {
   gap: 8px;
   margin-top: 4px;
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: 13px;
 }
 .card-tags { display: flex; gap: 4px; flex-wrap: wrap; }
 .tag {
-  font-size: 11px;
+  font-size: 12px;
   padding: 1px 7px;
   border-radius: 999px;
   background: var(--surface-muted);
@@ -628,7 +652,7 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -657,7 +681,7 @@ code {
   align-items: center;
   vertical-align: middle;
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: 13px;
 }
 .prio[data-prio="p0"]::before { content: "●●●"; color: #dc2626; letter-spacing: -1px; }
 .prio[data-prio="p1"]::before { content: "●●○"; color: #f59e0b; letter-spacing: -1px; }
@@ -670,7 +694,7 @@ code {
   padding: 28px 24px 64px;
 }
 .crumb {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-muted);
   margin-bottom: 16px;
 }
@@ -681,13 +705,13 @@ code {
 }
 .detail h1 {
   margin: 6px 0 10px 0;
-  font-size: 32px;
+  font-size: 34px;
   letter-spacing: -0.02em;
   line-height: 1.15;
   font-weight: 700;
 }
 .detail .summary {
-  font-size: 16px;
+  font-size: 17px;
   color: var(--text-muted);
   margin: 8px 0 0 0;
 }
@@ -700,18 +724,18 @@ code {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: 14px;
 }
 .spec-meta dt { color: var(--text-faint); font-weight: 500; }
 .spec-meta dd { margin: 0; color: var(--text); }
-.spec-meta dd code { font-size: 12px; }
+.spec-meta dd code { font-size: 13px; }
 
 .detail h2 {
   display: flex;
   align-items: center;
   gap: 12px;
   margin: 36px 0 14px 0;
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -748,7 +772,7 @@ code {
 .todo li::before {
   content: "☐";
   color: var(--text-faint);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.5;
   flex-shrink: 0;
 }
@@ -772,11 +796,11 @@ details.decision summary {
 }
 details.decision[open] summary { margin-bottom: 8px; }
 details.decision .dec-body p { margin: 6px 0; }
-details.decision .dec-body .label { color: var(--text-faint); text-transform: uppercase; font-size: 11px; letter-spacing: 0.06em; }
+details.decision .dec-body .label { color: var(--text-faint); text-transform: uppercase; font-size: 12px; letter-spacing: 0.06em; }
 
 .files-list { list-style: none; padding: 0; margin: 0; }
 .files-list li { padding: 3px 0; }
-.files-list code { font-size: 12px; }
+.files-list code { font-size: 13px; }
 
 .empty {
   color: var(--text-faint);
@@ -791,7 +815,7 @@ footer.detail-foot {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 /* ---------- Print ---------- */
