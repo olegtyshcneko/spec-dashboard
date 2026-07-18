@@ -1,0 +1,33 @@
+---
+import { dateKey, describeEvent } from "../lib/activity";
+import { activity } from "../lib/project";
+
+interface Props {
+  id: string;
+}
+
+const { id } = Astro.props;
+const events = activity.events.filter((event) => event.entryId === id);
+---
+{activity.available && (
+  <section class="activity-history">
+    <h2>History</h2>
+    {activity.shallow && (
+      <p class="activity-truncated">History may be truncated — this dashboard was built from a shallow clone.</p>
+    )}
+    {events.length === 0 ? (
+      <p class="activity-history-empty">No recorded history yet.</p>
+    ) : (
+      <ul class="activity-list">
+        {events.map((event) => (
+          <li class="activity-row" data-type={event.type}>
+            <span class="pill activity-badge" data-event={event.type}>{event.type}</span>
+            <span class="activity-desc">{describeEvent(event)}</span>
+            <time datetime={dateKey(event.timestamp)}>{dateKey(event.timestamp)}</time>
+            <span class="activity-author">{event.author}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+)}

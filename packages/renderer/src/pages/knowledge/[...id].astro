@@ -1,5 +1,6 @@
 ---
 import { getCollection, render } from "astro:content";
+import ActivityHistory from "../../components/ActivityHistory.astro";
 import EntryMeta from "../../components/EntryMeta.astro";
 import Relationships from "../../components/Relationships.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
@@ -22,5 +23,6 @@ const { Content } = await render(entry);
     </header>
     <div class="entry-body"><Content /></div>
     <Relationships id={entry.data.id} />
+    <ActivityHistory id={entry.data.id} />
   </article>
 </BaseLayout>
