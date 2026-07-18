@@ -1,0 +1,141 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { describeEvent, mergeUpdated } from "../../lib/activity";
+import { activity, hrefFor, snapshot } from "../../lib/project";
+
+const EVENT_TYPES = ["created", "state-changed", "milestone-changed", "priority-changed", "updated", "removed"];
+const liveIds = new Set([...snapshot.specs, ...snapshot.knowledge].map((entry) => entry.id));
+const rows = mergeUpdated(activity.events);
+const days: Array<{ date: string; rows: typeof rows }> = [];
+for (const row of rows) {
+  const last = days.at(-1);
+  if (last && last.date === row.dateKey) last.rows.push(row);
+  else days.push({ date: row.dateKey, rows: [row] });
+}
+---
+<BaseLayout title="Activity">
+  <section class="activity">
+    <header class="activity-heading">
+      <p class="activity-eyebrow">Change view</p>
+      <h2>Activity</h2>
+      <p class="summary">What changed recently — creations, lifecycle moves, and edits derived from git history.</p>
+    </header>
+
+    {!activity.available && (
+      <div class="activity-notice" role="status">
+        Activity requires git history at build time. See the automation guide (docs/AUTOMATION.md) for checkout configuration.
+      </div>
+    )}
+
+    {activity.available && activity.shallow && (
+      <div class="activity-notice" role="status">
+        History is truncated: this dashboard was built from a shallow clone. Configure <code>fetch-depth: 0</code> — see docs/AUTOMATION.md.
+      </div>
+    )}
+
+    {activity.available && (
+      <>
+        <div class="activity-filters">
+          <label>Type
+            <select id="activity-type">
+              <option value="all">All</option>
+              {EVENT_TYPES.map((type) => <option value={type}>{type}</option>)}
+            </select>
+          </label>
+          <label>Kind
+            <select id="activity-kind">
+              <option value="all">All</option>
+              <option value="spec">Spec</option>
+              <option value="knowledge">Knowledge</option>
+            </select>
+          </label>
+          <label>Filter
+            <input id="activity-q" type="search" placeholder="Filter by id, title, change…" autocomplete="off" />
+          </label>
+        </div>
+
+        <p class="activity-count" id="activity-count" role="status"></p>
+        <div class="activity-empty" id="activity-empty" role="status" hidden>
+          No activity matches these filters. Clear a filter to see more.
+        </div>
+
+        {days.map((day) => (
+          <section class="activity-day" data-activity-day>
+            <h2>{day.date}</h2>
+            <ul class="activity-list">
+              {day.rows.map((row) => (
+                <li
+                  class="activity-row"
+                  data-activity-row
+                  data-type={row.type}
+                  data-kind={row.entryKind}
+                  data-search={`${row.entryId} ${row.entryTitle} ${describeEvent(row)}`.toLowerCase()}
+                >
+                  <span class="pill activity-badge" data-event={row.type}>{row.type}</span>
+                  {liveIds.has(row.entryId) ? (
+                    <a class="activity-entry" href={hrefFor(row.entryKind === "spec" ? "specs" : "knowledge", row.entryId)}>
+                      <span class="activity-id">{row.entryId}</span> {row.entryTitle}
+                    </a>
+                  ) : (
+                    <span class="activity-entry"><span class="activity-id">{row.entryId}</span> {row.entryTitle}</span>
+                  )}
+                  <span class="activity-desc">{describeEvent(row)}</span>
+                  <span class="activity-author">{row.authors.join(", ")}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </>
+    )}
+  </section>
+
+  {activity.available && (
+    <script>
+      const typeSelect = document.querySelector("#activity-type");
+      const kindSelect = document.querySelector("#activity-kind");
+      const queryInput = document.querySelector("#activity-q");
+      const countLine = document.querySelector("#activity-count");
+      const emptyState = document.querySelector("#activity-empty");
+      const rows = [...document.querySelectorAll("[data-activity-row]")];
+      const dayGroups = [...document.querySelectorAll("[data-activity-day]")];
+      const TYPES = ["created", "state-changed", "milestone-changed", "priority-changed", "updated", "removed"];
+      const KINDS = ["spec", "knowledge"];
+
+      const params = new URLSearchParams(location.search);
+      if (TYPES.includes(params.get("type") ?? "")) typeSelect.value = params.get("type");
+      if (KINDS.includes(params.get("kind") ?? "")) kindSelect.value = params.get("kind");
+      queryInput.value = params.get("q") ?? "";
+
+      function apply() {
+        const type = typeSelect.value;
+        const kind = kindSelect.value;
+        const query = queryInput.value.trim().toLowerCase();
+        let shown = 0;
+        for (const row of rows) {
+          const match =
+            (type === "all" || row.dataset.type === type) &&
+            (kind === "all" || row.dataset.kind === kind) &&
+            (!query || (row.dataset.search ?? "").includes(query));
+          row.hidden = !match;
+          if (match) shown += 1;
+        }
+        for (const day of dayGroups) {
+          day.hidden = ![...day.querySelectorAll("[data-activity-row]")].some((row) => !row.hidden);
+        }
+        countLine.textContent = `Showing ${shown} of ${rows.length} events`;
+        emptyState.hidden = shown > 0;
+        const next = new URLSearchParams();
+        if (type !== "all") next.set("type", type);
+        if (kind !== "all") next.set("kind", kind);
+        if (queryInput.value.trim()) next.set("q", queryInput.value.trim());
+        history.replaceState(null, "", next.size > 0 ? `?${next}` : location.pathname);
+      }
+
+      typeSelect.addEventListener("change", apply);
+      kindSelect.addEventListener("change", apply);
+      queryInput.addEventListener("input", apply);
+      apply();
+    </script>
+  )}
+</BaseLayout>
