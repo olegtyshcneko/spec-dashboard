@@ -1,8 +1,13 @@
 import path from "node:path";
-import { loadProject, projectSnapshot } from "../../../core/dist/index.js";
+import { extractActivity, loadProject, projectSnapshot } from "../../../core/dist/index.js";
 
 export const projectRoot = path.resolve(process.env.SPECDASH_PROJECT_ROOT || "../..");
 export const projectModel = loadProject(projectRoot);
+
+export const activity = extractActivity(projectRoot, projectModel.config);
+if (!activity.available) {
+  console.warn(`[specdash] activity feed unavailable: ${activity.reason ?? "unknown reason"}`);
+}
 export const dashboardConfig = projectModel.config;
 const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 
