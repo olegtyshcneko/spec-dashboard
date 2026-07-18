@@ -19,6 +19,7 @@ Every entry has versioned frontmatter. The core validates schema, category, mile
 
 - Node.js 22.12 or newer
 - npm 10 or newer
+- Git 2.42 or newer for the activity feed (older Git builds the dashboard without activity)
 
 ## Documentation
 
@@ -83,6 +84,7 @@ The generated site includes:
 - dependency, related-entry, and backlink views;
 - a graphical Map/List relationship explorer with category, lifecycle, neighborhood, and zoom controls;
 - a global full-text search dialog (`/` or `Ctrl+K`) over spec and knowledge bodies with ranked, highlighted results;
+- a git-derived activity feed with per-entry history sections showing creations, lifecycle moves, and edits;
 - a health page for schema and readiness diagnostics;
 - a knowledge index connected to the work it informs.
 

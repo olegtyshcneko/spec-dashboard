@@ -234,6 +234,10 @@ The graphical view is an exploration tool, not the only representation.
 
 For thousands of nodes, prefer category-scoped dashboards or future server-generated clustering rather than rendering the entire project as one map.
 
+## Activity page shows "Activity requires git history"
+
+The activity feed is extracted from git at build time. This message means the build ran without usable history: the project is not a git repository, git is missing, or git is older than 2.42. Build from a full clone with Git ≥ 2.42. If the page shows a truncation banner instead, the checkout was shallow — use `fetch-depth: 0`.
+
 ## CI and local results differ
 
 Compare:

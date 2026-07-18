@@ -110,6 +110,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -175,7 +177,7 @@ Useful boundaries include:
 | Release preparation | Previous release tag |
 | Local feature work | `origin/main` or the branch point |
 
-The comparison requires enough Git history. Use `fetch-depth: 0` in workflows that reconcile against another commit or tag.
+The comparison requires enough Git history. Use `fetch-depth: 0` in workflows that reconcile against another commit or tag. The activity feed also requires full history at build time: a shallow checkout truncates the feed and suppresses creation events at the shallow boundary. Use `fetch-depth: 0` in any workflow that builds the dashboard, including Pages deployment.
 
 ## Keep generated output out of normal source review
 
