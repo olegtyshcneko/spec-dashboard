@@ -94,3 +94,55 @@ export function deriveChanges(
   }
   return deltas.length > 0 ? deltas : [{ type: "updated" }];
 }
+
+export interface StatusRecord {
+  status: string;
+  path: string;
+  oldPath?: string;
+  score?: number;
+}
+
+export interface CommitRecord {
+  commit: string;
+  timestamp: number;
+  author: string;
+  files: StatusRecord[];
+}
+
+export function parseLogStream(raw: string): CommitRecord[] {
+  const commits: CommitRecord[] = [];
+  let current: CommitRecord | null = null;
+  let pendingStatus: string | null = null;
+  let pendingPaths: string[] = [];
+
+  for (const token of raw.split("\u0000")) {
+    const headerAt = token.indexOf("\u0001");
+    if (headerAt !== -1) {
+      const [hash = "", timestamp = "", author = ""] = token.slice(headerAt + 1).split("\u0001");
+      current = { commit: hash, timestamp: Number(timestamp), author, files: [] };
+      commits.push(current);
+      pendingStatus = null;
+      pendingPaths = [];
+      continue;
+    }
+    const cleaned = token.replace(/^\n+/, "");
+    if (!current || cleaned === "") continue;
+    if (pendingStatus === null) {
+      pendingStatus = cleaned;
+      pendingPaths = [];
+      continue;
+    }
+    pendingPaths.push(token);
+    const twoPath = pendingStatus.startsWith("R") || pendingStatus.startsWith("C");
+    if (pendingPaths.length === (twoPath ? 2 : 1)) {
+      const record: StatusRecord = twoPath
+        ? { status: pendingStatus[0]!, path: pendingPaths[1]!, oldPath: pendingPaths[0]! }
+        : { status: pendingStatus[0]!, path: pendingPaths[0]! };
+      const score = Number(pendingStatus.slice(1));
+      if (twoPath && Number.isFinite(score) && pendingStatus.length > 1) record.score = score;
+      current.files.push(record);
+      pendingStatus = null;
+    }
+  }
+  return commits;
+}

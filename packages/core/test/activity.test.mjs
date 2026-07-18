@@ -75,3 +75,39 @@ test("deriveChanges suppresses lifecycle deltas for knowledge", () => {
     [{ type: "updated" }],
   );
 });
+
+import { parseLogStream } from "../dist/index.js";
+
+const NUL = "\u0000";
+const SOH = "\u0001";
+
+test("parseLogStream parses commits, statuses, renames, and glued headers", () => {
+  const raw = [
+    `${SOH}aaa${SOH}200${SOH}Alice`,
+    `${NUL}M${NUL}content/specs/a.mdx`,
+    `${NUL}R100${NUL}content/specs/old.mdx${NUL}content/specs/new.mdx`,
+    `${NUL}\n${SOH}bbb${SOH}100${SOH}Bob`,
+    `${NUL}A${NUL}content/knowledge/k.mdx${NUL}`,
+  ].join("");
+  assert.deepEqual(parseLogStream(raw), [
+    {
+      commit: "aaa", timestamp: 200, author: "Alice",
+      files: [
+        { status: "M", path: "content/specs/a.mdx" },
+        { status: "R", path: "content/specs/new.mdx", oldPath: "content/specs/old.mdx", score: 100 },
+      ],
+    },
+    { commit: "bbb", timestamp: 100, author: "Bob", files: [{ status: "A", path: "content/knowledge/k.mdx" }] },
+  ]);
+});
+
+test("parseLogStream handles a commit with no file records and unknown statuses", () => {
+  const raw = `${SOH}ccc${SOH}300${SOH}Cara${NUL}T${NUL}content/specs/t.mdx${NUL}\n${SOH}ddd${SOH}250${SOH}Dan`;
+  const commits = parseLogStream(raw);
+  assert.deepEqual(commits[0].files, [{ status: "T", path: "content/specs/t.mdx" }]);
+  assert.deepEqual(commits[1], { commit: "ddd", timestamp: 250, author: "Dan", files: [] });
+});
+
+test("parseLogStream returns [] for empty input", () => {
+  assert.deepEqual(parseLogStream(""), []);
+});
