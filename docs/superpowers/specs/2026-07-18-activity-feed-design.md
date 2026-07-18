@@ -1,8 +1,8 @@
 # Git-Derived Activity Feed — Design
 
 **Date:** 2026-07-18
-**Status:** Approved (hardened after external design review, 2026-07-18)
-**Scope:** new `packages/core/src/activity.ts` (+ tests), `packages/core/src/index.ts` (barrel export), new `packages/renderer/src/pages/activity/index.astro`, new `packages/renderer/src/components/ActivityHistory.astro`, `packages/renderer/src/lib/project.ts` (extraction call site), `packages/renderer/src/layouts/BaseLayout.astro` (nav link), `packages/renderer/src/pages/specs/[...id].astro` and `packages/renderer/src/pages/knowledge/[...id].astro` (history section), shared styles (`assets/style.css`, `packages/renderer/src/styles/global.css`), `docs/AUTOMATION.md`, this repository's Pages workflow (`fetch-depth: 0`)
+**Status:** Approved (hardened after two external design review rounds, 2026-07-18)
+**Scope:** new `packages/core/src/activity.ts` (+ tests), `packages/core/src/index.ts` (barrel export), new `packages/renderer/src/pages/activity/index.astro`, new `packages/renderer/src/components/ActivityHistory.astro`, `packages/renderer/src/lib/project.ts` (extraction call site), `packages/renderer/src/layouts/BaseLayout.astro` (nav link), `packages/renderer/src/pages/specs/[...id].astro` and `packages/renderer/src/pages/knowledge/[...id].astro` (history section), shared styles (`assets/style.css`, `packages/renderer/src/styles/global.css`), `docs/AUTOMATION.md`, `README.md` and `docs/TROUBLESHOOTING.md` (Git ≥ 2.42 requirement for activity), this repository's Pages workflow (`fetch-depth: 0`)
 
 ## Purpose
 
@@ -30,22 +30,27 @@ Extraction walks **first-parent history only**: `git log --first-parent --diff-m
 
 All git output that contains paths is **NUL-delimited**; nothing parses paths from line-based output. Git runs from the **repository toplevel** (`git rev-parse --show-toplevel`), and the content pathspec is computed relative to the toplevel — the dashboard root may be nested inside a larger repository, so config-relative paths must never be handed to git directly.
 
-1. Preflight: `git rev-parse --show-toplevel` and `--is-shallow-repository` (failure → `available: false`).
-2. `git log --first-parent --diff-merges=first-parent -z --name-status --find-renames --format=… -- <toplevel-relative contentDir>` — per-commit hash, committer timestamp, author name, and NUL-delimited per-file A/M/D/R status. Run via `execFileSync` with an **explicit `maxBuffer`** (64 MiB); name-status output is metadata-sized.
+1. Preflight: `git version` (activity requires **Git ≥ 2.42** for `cat-file -Z`; older git → `available: false` with reason `git >= 2.42 required`, documented in README requirements and TROUBLESHOOTING — no feature-detected fallback path), then `git rev-parse --show-toplevel` and `--is-shallow-repository` (failure → `available: false`).
+2. `git log --first-parent --diff-merges=first-parent -z --name-status --find-renames --format=<sentinel-framed header> -- <toplevel-relative pathspecs>` — per-commit hash, committer timestamp, author name, and NUL-delimited per-file status. The pathspecs are exactly `<contentDir>/specs` and `<contentDir>/knowledge` (toplevel-relative), matching `loadProject`'s file universe. The `--format` string frames each commit header with a distinctive NUL sentinel (e.g. `%x00%x00%H%x00%ct%x00%an%x00%x00`), and the parser is defined as a **byte-level grammar**: scan for the sentinel, read the header fields, then consume NUL-delimited status/path records until the next sentinel — tolerating the literal linefeed git emits between a pretty-format header and its name-status block. Run via `execFileSync` with an **explicit `maxBuffer`** (64 MiB); name-status output is metadata-sized.
 3. One `git cat-file --batch -Z` process fed `<sha>:<toplevel-relative path>` requests for every needed revision. Responses are parsed by the **declared byte size** in each object header — blob content is arbitrary bytes and must never be split on delimiters. Per-object `missing` / non-blob responses do not fail the process; the affected revision is treated as opaque (below). The batch runs with an explicit `maxBuffer` (256 MiB); overflow or any subprocess failure degrades to `available: false` with a reason, never a partial feed.
 
 Whole blobs are transferred (git offers no cheaper granularity), but only the frontmatter block — the text between the opening `---` fences — is ever parsed; bodies are discarded unread. At this project's documented scale (tens of entries, KB-sized MDX) total blob volume is a few megabytes.
 
 ### Historical frontmatter projection
 
-Historical revisions are **not** validated against today's Zod schemas — old revisions may predate current required fields or enum values and are still meaningful history. A revision is **parseable** when its frontmatter block parses as YAML to an object with a string `id`. From a parseable revision, extraction projects only the tracked fields, all as optional strings: `id`, `title`, `state`, `milestone`, `priority`. A missing field and an explicit `null` are both "unset" (rendered as "milestone set to X" / "milestone cleared"). Anything else about the revision is ignored.
+Historical revisions are **not** validated against today's Zod schemas — old revisions may predate current required fields or enum values and are still meaningful history. A revision is **parseable** when its frontmatter block parses as YAML to an object with a string `id`. From a parseable revision, extraction projects only the tracked fields, all as optional strings: `id`, `title`, `state`, `milestone`, `priority`. A missing field, an explicit `null`, and a **non-string value** (number, array, object, boolean) are all "unset" — the revision stays parseable, values are never coerced (rendered as "milestone set to X" / "milestone cleared"). Anything else about the revision is ignored.
 
 ### Event derivation
 
-Two layers with an explicit boundary:
+Three layers with explicit boundaries:
 
-- **Pure differ** — `deriveChanges(older: TrackedFields | null, newer: TrackedFields | null): ChangeDelta[]`, where a delta is `{ type, from?, to? }` over the six event types. `null → fields` yields `created` (with initial state for specs); `fields → null` yields `removed`; field-level differences yield `state-changed` / `milestone-changed` / `priority-changed`; a revision pair with no tracked-field difference yields a single `updated`. Unit-testable with no git and no commit context.
-- **Enrichment** — the extractor maps each delta plus its commit metadata (hash, committer time, author) and file status into an `ActivityEvent`. File status drives which differ call happens: `A` → `deriveChanges(null, rev)`; `D` → `deriveChanges(rev, null)`; `M` → diff against the previous revision in first-parent lineage; `R` alone (rename, identical content) → no differ call and **no event**; `R` with content change → treated as `M` under the new path.
+- **Dispatcher** — for each commit+file record, decides which differ calls happen, in this order:
+  1. **Eligibility.** Only paths matching `specs/**/*.{md,mdx}` or `knowledge/**/*.{md,mdx}` under `contentDir` (case-insensitive extensions, matching `loadProject`) participate. A rename whose old path is eligible and new path is not dispatches as `D` (the entry left the model); the reverse dispatches as `A`. Ineligible paths are discarded before derivation.
+  2. **Status normalization.** `A`/`M`/`D`/`R` as below; `T` (typechange) is normalized to `M`; any other status letter marks that revision opaque (an `updated`, per Opaque revisions).
+  3. **Kind and identity.** `entryKind` is derived from the directory (`specs/` vs `knowledge/`) at each revision. When old and new revisions are both parseable and differ in kind (rename across directories) **or** in `id`, the dispatcher emits `removed` (enriched from the **older** revision's projection and kind) plus `created` (enriched from the **newer** revision's) — no differ call.
+  4. Otherwise: `A` → `deriveChanges(null, rev, kind)`; `D` → `deriveChanges(rev, null, kind)`; `M` → `deriveChanges(prev, rev, kind)` against the previous revision in first-parent lineage; `R` with identical content → no differ call and **no event** (this rule takes precedence over the opaque rule — parseability is irrelevant when content is unchanged); `R` with content change → `M` under the new path.
+- **Pure differ** — `deriveChanges(older: TrackedFields | null, newer: TrackedFields | null, kind: "spec" | "knowledge"): ChangeDelta[]`, where a delta is `{ type, from?, to? }` over the six event types. `null → fields` yields `created` (with initial state for specs); `fields → null` yields `removed`; field-level differences yield `state-changed` / `milestone-changed` / `priority-changed` (suppressed entirely when `kind` is `knowledge`); a pair with no emitted delta yields a single `updated`. Unit-testable with no git and no commit context.
+- **Enrichment** — maps each delta plus its commit metadata (hash, committer time, author) into an `ActivityEvent`. `removed` deltas take id/title/kind from the older revision's projection; all other deltas from the newer one.
 
 ```ts
 interface ActivityEvent {
@@ -67,11 +72,11 @@ interface ActivityEvent {
 
 ### Opaque revisions
 
-A revision is **opaque** when its frontmatter is unparseable (per the projection rule) or its blob is unreadable (`missing` from cat-file). Attribution rules:
+A revision is **opaque** when its frontmatter is unparseable (per the projection rule), its blob is unreadable (`missing` from cat-file), or its file status is one the dispatcher does not model. Attribution rules:
 
-- The opaque commit emits a single `updated` event, using id/title from the **nearest earlier parseable revision** in the same lineage (or the nearest later one when the file has no earlier parseable revision).
+- **Leading opaque revisions emit nothing.** A file's history starts at its **first parseable** revision, which emits `created` (with that revision's state); opaque revisions before it are silent — an entry must never show `updated` events dated before its `created`.
+- After the first parseable revision, an opaque commit emits a single `updated` event, using id/title from the **nearest earlier parseable revision** in the same lineage. Exception: a rename with identical content emits nothing regardless of parseability (dispatcher rule 4 wins over this rule).
 - Tracked-field diffing **skips over** opaque revisions: the next parseable revision is diffed against the last parseable one, so a state change hidden inside an opaque span is attributed to the commit that made the file parseable again.
-- A file whose first revisions are opaque emits `created` at its **first parseable** revision (with that revision's state).
 - Deleting a file that never had a parseable revision emits nothing. Deleting a file whose last parseable revision exists emits `removed` with that revision's id/title.
 
 Extraction never throws on malformed history; every rule above degrades to truthful, attributable output.
@@ -80,7 +85,7 @@ Extraction never throws on malformed history; every rule above degrades to truth
 
 ```ts
 interface ActivityResult {
-  available: boolean;  // false: git missing, not a repo, subprocess failure, buffer overflow
+  available: boolean;  // false: git missing or < 2.42, not a repo, subprocess failure, buffer overflow
   reason?: string;     // set when available is false — surfaced in the build warning
   shallow: boolean;    // git rev-parse --is-shallow-repository
   events: ActivityEvent[];
@@ -91,7 +96,7 @@ interface ActivityResult {
 
 ### Determinism
 
-Event order is total and reproducible: primary order is the first-parent walk order from `git log` (newest first — deterministic even for equal timestamps); within one commit, events sort by toplevel-relative path, then by fixed event-type order (`created`, `state-changed`, `milestone-changed`, `priority-changed`, `updated`, `removed`). Integration tests assert exact sequences against this rule.
+Event order is total and reproducible for a given git version and configuration (rename *detection* is git's similarity heuristic and may differ across git versions — accepted; everything downstream of detection is deterministic). Primary order is the first-parent walk order from `git log` (newest first — deterministic even for equal timestamps); within one commit, events sort by toplevel-relative path — for renames, the **new** path — compared as byte strings, then by fixed event-type order (`created`, `state-changed`, `milestone-changed`, `priority-changed`, `updated`, `removed`). Integration tests assert exact sequences against this rule.
 
 ## Renderer
 
@@ -104,13 +109,13 @@ Event order is total and reproducible: primary order is the first-parent walk or
 - a human description — "state ready → active", "milestone set to next-release", "priority p2 → p1", "created as backlog", "removed";
 - the commit author.
 
-**`updated` merging** happens at build time, before any client filtering: within one UTC day, consecutive `updated` events for the same entry collapse into a single row ("updated ×3") carrying the newest event's commit and timestamp and the distinct authors joined ("A, B"). The merged row's type is `updated` for filtering purposes. Per-entry history does **not** merge — it is the detail view.
+**`updated` merging** happens at build time, before any client filtering: within one UTC day, consecutive `updated` events for the same entry collapse into a single row ("updated ×3") carrying the newest event's commit and timestamp and the distinct authors joined in order of first appearance, newest first ("A, B"). The merged row's type is `updated` for filtering purposes. Per-entry history does **not** merge — it is the detail view.
 
 **Filtering** is URL-backed to the house standard set by the roadmap and search specs:
 
-- Query params: `type` (event type), `kind` (`spec` | `knowledge`), `q` (text over ID, title, and description). Filters combine with AND.
+- Query params: `type` (event type), `kind` (`spec` | `knowledge`), `q` (trimmed, case-insensitive **substring** match over ID, title, and description — the roadmap's semantics, not the search dialog's fuzzy matching). Filters combine with AND.
 - State hydrates from the URL on load; changes write via `history.replaceState` (filter tweaks are not navigation steps, so Back/Forward need no `popstate` handling). Unknown or invalid param values are ignored and fall back to "all".
-- A count line ("Showing X of N events") lives in a `role="status"` region and updates with the filters; a directive no-match empty state matches the roadmap's pattern; day headings whose rows are all hidden are hidden too.
+- A count line ("Showing X of N events") lives in a `role="status"` region; X and N count **rendered rows** (a merged "updated ×3" row counts once) and updates with the filters; a directive no-match empty state matches the roadmap's pattern; day headings whose rows are all hidden are hidden too.
 - The filter script is the page's only client JS.
 
 ### Per-entry history
@@ -131,12 +136,12 @@ Event order is total and reproducible: primary order is the first-parent walk or
 
 ## Verification
 
-- **Core unit tests (differ):** table-driven `deriveChanges` cases for every event type; no-tracked-change → `updated`; state+milestone change → two deltas; `null → fields` and `fields → null`; unset vs `null` milestone equivalence; knowledge projections emitting only created/updated/removed.
-- **Core integration test (temp repo fixture):** scripted commits — create, edit body only, flip state, move milestone, rename file (with and without edits), delete file, an id change (asserting removed+created), a malformed-frontmatter span repaired later (asserting the `updated` at the opaque commit and the transition attributed to the repairing commit), and a **divergent-branch merge** (state flipped on a side branch, merged — asserting one transition attributed to the merge commit and none from side-branch commits). Assertions cover the exact event sequence under the Determinism rule, and authorship.
+- **Core unit tests (differ):** table-driven `deriveChanges` cases for every event type; no-tracked-change → `updated`; state+milestone change → two deltas; `null → fields` and `fields → null`; unset vs `null` vs non-string (number/array/object) tracked-field equivalence; `kind: "knowledge"` suppressing lifecycle deltas.
+- **Core integration test (temp repo fixture):** scripted commits — create, edit body only, flip state, move milestone, rename file (with and without edits), rename across `specs/` ↔ `knowledge/` (asserting removed+created), rename to an ineligible path (asserting `removed`), a typechange (`T` status, e.g. file → symlink, asserting `M` normalization), delete file, an id change (asserting removed+created), a **file whose first commits are malformed** (asserting silence before the first parseable revision's `created`), a malformed-frontmatter span repaired later (asserting the `updated` at the opaque commit and the transition attributed to the repairing commit), and a **divergent-branch merge** (state flipped on a side branch, merged — asserting one transition attributed to the merge commit and none from side-branch commits). Assertions cover the exact event sequence under the Determinism rule, and authorship. A stubbed `git version` below 2.42 asserts `available: false` with the version reason.
 - **Shallow behavior:** clone the fixture with `git clone --depth 2 file://…` (the `file://` transport is required — local-path clones ignore `--depth`) and assert `shallow: true`, suppression of boundary-commit `created` events only, and survival of a genuine post-boundary creation. A non-repo directory asserts `available: false` with a `reason`, without throwing.
 - **Nested-root case:** a fixture where the dashboard root sits in a repo subdirectory asserts toplevel-relative pathspec handling.
 - **Build output:** the built site contains `activity/index.html`; every page's nav includes the Activity link; a spec entry page contains its history section; `html-validate` stays green along with the existing core and MCP suites.
-- **Browser sweep (Playwright):** day groups render newest first; `type`/`kind`/`q` filters hydrate from a deep-linked URL, update rows, the count line, and the URL via `replaceState`; invalid params fall back to "all"; an `updated ×n` merged row appears; the no-match empty state shows; clicking an event navigates to the entry page; the entry page shows matching unmerged history; layout holds at 390×844 with no horizontal overflow.
+- **Browser sweep (Playwright):** day groups render newest first; `type`/`kind`/`q` filters hydrate from a deep-linked URL, update rows, the count line (counting rendered rows), and the URL via `replaceState`; invalid params fall back to "all"; an `updated ×n` merged row appears and counts once; the no-match empty state shows; clicking an event navigates to the entry page; the entry page shows matching unmerged history; layout holds at 390×844 with no horizontal overflow.
 - **Degradation:** building a copy of the project without `.git` produces the notice page and the single build warning, not a failure.
 
 ## Out of scope
