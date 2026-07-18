@@ -130,6 +130,146 @@ function gitRepo() {
   return { root, run };
 }
 
+import { buildEvents } from "../dist/index.js";
+
+function spec(id, extra = "") {
+  return `---\nid: ${id}\ntitle: ${id} title\n${extra}\n---\nBody.\n`;
+}
+
+function harness() {
+  const store = new Map();
+  const commits = [];
+  let clock = 0;
+  return {
+    commit(author, files) {
+      clock += 100;
+      const hash = `c${clock}`;
+      const records = [];
+      for (const [key, content] of Object.entries(files)) {
+        const [status, ...rest] = key.split(":");
+        const p = rest.join(":");
+        if (status === "R" || status === "R100") {
+          const [oldPath, newPath] = p.split("->");
+          records.push({ status: "R", oldPath, path: newPath, score: status === "R100" ? 100 : 50 });
+          if (content !== undefined) store.set(`${hash}:${newPath}`, content);
+        } else {
+          records.push({ status, path: p });
+          if (content !== undefined) store.set(`${hash}:${p}`, content);
+        }
+      }
+      commits.unshift({ commit: hash, timestamp: clock, author, files: records });
+      return hash;
+    },
+    build(boundary = new Set()) {
+      return buildEvents(commits, (c, p) => store.get(`${c}:${p}`) ?? null, { prefix: "content", boundary });
+    },
+  };
+}
+
+test("buildEvents: create, body edit, state flip, milestone move, delete", () => {
+  const h = harness();
+  h.commit("Alice", { "A:content/specs/a.mdx": spec("SPEC-001", "state: backlog") });
+  h.commit("Alice", { "M:content/specs/a.mdx": spec("SPEC-001", "state: backlog") + "More.\n" });
+  h.commit("Bob", { "M:content/specs/a.mdx": spec("SPEC-001", "state: active") });
+  h.commit("Bob", { "M:content/specs/a.mdx": spec("SPEC-001", "state: active\nmilestone: v1-0") });
+  h.commit("Cara", { "D:content/specs/a.mdx": undefined });
+  const types = h.build().map((event) => event.type);
+  assert.deepEqual(types, ["removed", "milestone-changed", "state-changed", "updated", "created"]);
+  const created = h.build().at(-1);
+  assert.equal(created.to, "backlog");
+  assert.equal(created.entryTitle, "SPEC-001 title");
+});
+
+test("buildEvents: knowledge entries emit only created/updated/removed", () => {
+  const h = harness();
+  h.commit("Alice", { "A:content/knowledge/k.mdx": spec("KB-001", "state: weird") });
+  h.commit("Alice", { "M:content/knowledge/k.mdx": spec("KB-001", "state: other") });
+  assert.deepEqual(h.build().map((event) => [event.type, event.entryKind]), [["updated", "knowledge"], ["created", "knowledge"]]);
+});
+
+test("buildEvents: leading opaque revisions are silent; created fires at first parseable", () => {
+  const h = harness();
+  h.commit("Alice", { "A:content/specs/a.mdx": "not frontmatter" });
+  h.commit("Alice", { "M:content/specs/a.mdx": "still: [broken" });
+  const fix = h.commit("Bob", { "M:content/specs/a.mdx": spec("SPEC-001", "state: ready") });
+  const events = h.build();
+  assert.deepEqual(events.map((event) => [event.type, event.commit]), [["created", fix]]);
+  assert.equal(events[0].to, "ready");
+});
+
+test("buildEvents: opaque span attributes hidden transition to the repairing commit", () => {
+  const h = harness();
+  h.commit("Alice", { "A:content/specs/a.mdx": spec("SPEC-001", "state: backlog") });
+  h.commit("Alice", { "M:content/specs/a.mdx": "broken: [yaml" });
+  const repair = h.commit("Bob", { "M:content/specs/a.mdx": spec("SPEC-001", "state: active") });
+  const events = h.build();
+  assert.deepEqual(events.map((event) => [event.type, event.commit]), [
+    ["state-changed", repair],
+    ["updated", events[1].commit],
+    ["created", events[2].commit],
+  ]);
+  assert.equal(events[0].from, "backlog");
+});
+
+test("buildEvents: id change and cross-kind rename emit removed+created", () => {
+  const h = harness();
+  h.commit("Alice", { "A:content/specs/a.mdx": spec("SPEC-001", "state: backlog") });
+  h.commit("Alice", { "M:content/specs/a.mdx": spec("SPEC-999", "state: backlog") });
+  const idChange = h.build().slice(0, 2);
+  assert.deepEqual(idChange.map((event) => [event.type, event.entryId]), [["created", "SPEC-999"], ["removed", "SPEC-001"]]);
+
+  const h2 = harness();
+  h2.commit("Alice", { "A:content/specs/a.mdx": spec("SPEC-002", "state: backlog") });
+  h2.commit("Alice", { "R:content/specs/a.mdx->content/knowledge/a.mdx": spec("SPEC-002", "state: backlog") });
+  const cross = h2.build().slice(0, 2);
+  assert.deepEqual(cross.map((event) => [event.type, event.entryKind]), [["created", "knowledge"], ["removed", "spec"]]);
+});
+
+test("buildEvents: R100 rename emits nothing; rename with edits diffs under new path", () => {
+  const h = harness();
+  h.commit("Alice", { "A:content/specs/a.mdx": spec("SPEC-001", "state: backlog") });
+  h.commit("Alice", { "R100:content/specs/a.mdx->content/specs/b.mdx": spec("SPEC-001", "state: backlog") });
+  h.commit("Bob", { "R:content/specs/b.mdx->content/specs/c.mdx": spec("SPEC-001", "state: active") });
+  assert.deepEqual(h.build().map((event) => event.type), ["state-changed", "created"]);
+});
+
+test("buildEvents: eligibility — ineligible paths ignored, boundary-crossing rename leaves the model", () => {
+  const h = harness();
+  h.commit("Alice", { "A:content/specs/a.txt": "irrelevant", "A:docs/x.mdx": "irrelevant" });
+  h.commit("Alice", { "A:content/specs/a.mdx": spec("SPEC-001", "state: backlog") });
+  h.commit("Alice", { "R100:content/specs/a.mdx->content/archive/a.mdx": spec("SPEC-001", "state: backlog") });
+  assert.deepEqual(h.build().map((event) => event.type), ["removed", "created"]);
+});
+
+test("buildEvents: T normalizes to M; unknown status is opaque updated", () => {
+  const h = harness();
+  h.commit("Alice", { "A:content/specs/a.mdx": spec("SPEC-001", "state: backlog") });
+  h.commit("Alice", { "T:content/specs/a.mdx": spec("SPEC-001", "state: ready") });
+  h.commit("Bob", { "?:content/specs/a.mdx": undefined });
+  assert.deepEqual(h.build().map((event) => event.type), ["updated", "state-changed", "created"]);
+});
+
+test("buildEvents: shallow boundary suppresses created only at boundary commits", () => {
+  const h = harness();
+  const boundaryCommit = h.commit("Alice", { "A:content/specs/a.mdx": spec("SPEC-001", "state: backlog") });
+  h.commit("Alice", { "M:content/specs/a.mdx": spec("SPEC-001", "state: active") });
+  h.commit("Bob", { "A:content/specs/b.mdx": spec("SPEC-002", "state: idea") });
+  const events = h.build(new Set([boundaryCommit]));
+  assert.deepEqual(events.map((event) => [event.type, event.entryId]), [
+    ["created", "SPEC-002"],
+    ["state-changed", "SPEC-001"],
+  ]);
+});
+
+test("buildEvents: within-commit ordering is by path then type order", () => {
+  const h = harness();
+  h.commit("Alice", {
+    "A:content/specs/b.mdx": spec("SPEC-002", "state: idea"),
+    "A:content/specs/a.mdx": spec("SPEC-001", "state: idea"),
+  });
+  assert.deepEqual(h.build().map((event) => event.entryId), ["SPEC-001", "SPEC-002"]);
+});
+
 test("readBlobs returns content by declared size and null for missing objects", () => {
   const { root, run } = gitRepo();
   fs.mkdirSync(path.join(root, "content/specs"), { recursive: true });

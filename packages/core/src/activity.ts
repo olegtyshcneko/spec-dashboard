@@ -110,6 +110,145 @@ export interface CommitRecord {
   files: StatusRecord[];
 }
 
+const TYPE_ORDER: Record<ActivityEventType, number> = {
+  created: 0,
+  "state-changed": 1,
+  "milestone-changed": 2,
+  "priority-changed": 3,
+  updated: 4,
+  removed: 5,
+};
+
+function classify(prefix: string, filePath: string): EntryKind | null {
+  const base = prefix ? `${prefix}/` : "";
+  if (!filePath.startsWith(base)) return null;
+  const rest = filePath.slice(base.length);
+  const kind: EntryKind | null = rest.startsWith("specs/") ? "spec" : rest.startsWith("knowledge/") ? "knowledge" : null;
+  return kind && /\.(md|mdx)$/i.test(rest) ? kind : null;
+}
+
+interface Lineage {
+  last: TrackedFields | null; // last parseable projection; null until first parseable revision
+  kind: EntryKind;
+}
+
+export function buildEvents(
+  commits: CommitRecord[],
+  blob: (commit: string, filePath: string) => string | null,
+  options: { prefix: string; boundary: Set<string> },
+): ActivityEvent[] {
+  const lineages = new Map<string, Lineage>();
+  const eventsPerCommit = new Map<string, ActivityEvent[]>();
+
+  const enrich = (
+    commit: CommitRecord,
+    delta: ChangeDelta,
+    fields: TrackedFields,
+    kind: EntryKind,
+  ): ActivityEvent => ({
+    entryId: fields.id,
+    entryTitle: fields.title ?? fields.id,
+    entryKind: kind,
+    type: delta.type,
+    ...(delta.from !== undefined ? { from: delta.from } : {}),
+    ...(delta.to !== undefined ? { to: delta.to } : {}),
+    commit: commit.commit,
+    timestamp: commit.timestamp,
+    author: commit.author,
+  });
+
+  for (const commit of [...commits].reverse()) {
+    const emitted: ActivityEvent[] = [];
+    const emit = (delta: ChangeDelta, fields: TrackedFields, kind: EntryKind) => {
+      if (delta.type === "created" && options.boundary.has(commit.commit)) return;
+      emitted.push(enrich(commit, delta, fields, kind));
+    };
+
+    const records = [...commit.files].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+    for (const record of records) {
+      let status = record.status === "T" ? "M" : record.status;
+      let filePath = record.path;
+      let oldPath = record.oldPath;
+
+      if (status === "R") {
+        const oldKind = oldPath ? classify(options.prefix, oldPath) : null;
+        const newKind = classify(options.prefix, filePath);
+        if (!oldKind && !newKind) continue;
+        if (oldKind && !newKind) { status = "D"; filePath = oldPath!; }
+        else if (!oldKind && newKind) { status = "A"; }
+        else {
+          const lineage = lineages.get(oldPath!) ?? { last: null, kind: oldKind! };
+          lineages.delete(oldPath!);
+          lineages.set(filePath, lineage);
+          if (oldKind !== newKind) {
+            // Cross-kind rename: removed+created, no differ call (spec dispatcher rule 3).
+            const content = record.score === 100 ? null : blob(commit.commit, filePath);
+            const newProjection = record.score === 100 ? lineage.last : content === null ? null : projectRevision(content);
+            if (lineage.last && newProjection) {
+              emit({ type: "removed" }, lineage.last, oldKind!);
+              const created: ChangeDelta = { type: "created" };
+              if (newKind === "spec" && newProjection.state) created.to = newProjection.state;
+              emit(created, newProjection, newKind!);
+            } else if (!lineage.last && newProjection) {
+              // First parseable revision arrives via the rename: it is the entry's created.
+              const created: ChangeDelta = { type: "created" };
+              if (newKind === "spec" && newProjection.state) created.to = newProjection.state;
+              emit(created, newProjection, newKind!);
+            } else if (lineage.last && !newProjection) {
+              emit({ type: "updated" }, lineage.last, newKind!);
+            }
+            lineage.kind = newKind!;
+            if (newProjection) lineage.last = newProjection;
+            continue;
+          }
+          if (record.score === 100) continue; // identical content, same kind: no event, regardless of parseability
+          status = "M";
+        }
+      }
+
+      const kind = classify(options.prefix, filePath);
+      if (!kind) continue;
+      const lineage = lineages.get(filePath) ?? { last: null, kind };
+      lineages.set(filePath, lineage);
+
+      if (status === "A" || status === "M") {
+        const content = blob(commit.commit, filePath);
+        const projection = content === null ? null : projectRevision(content);
+        if (projection === null) {
+          if (lineage.last) emit({ type: "updated" }, lineage.last, lineage.kind);
+          continue;
+        }
+        if (lineage.last === null) {
+          const created: ChangeDelta = { type: "created" };
+          if (kind === "spec" && projection.state) created.to = projection.state;
+          emit(created, projection, kind);
+        } else if (lineage.last.id !== projection.id) {
+          emit({ type: "removed" }, lineage.last, lineage.kind);
+          const created: ChangeDelta = { type: "created" };
+          if (kind === "spec" && projection.state) created.to = projection.state;
+          emit(created, projection, kind);
+        } else {
+          for (const delta of deriveChanges(lineage.last, projection, kind)) emit(delta, projection, kind);
+        }
+        lineage.last = projection;
+        lineage.kind = kind;
+      } else if (status === "D") {
+        if (lineage.last) emit({ type: "removed" }, lineage.last, lineage.kind);
+        lineages.delete(filePath);
+      } else {
+        // unmodeled status letter → opaque
+        if (lineage.last) emit({ type: "updated" }, lineage.last, lineage.kind);
+      }
+    }
+
+    emitted.sort((a, b) => TYPE_ORDER[a.type] - TYPE_ORDER[b.type]);
+    // stable within path: records were processed in path order, sort() in V8 is stable
+    eventsPerCommit.set(commit.commit, emitted);
+  }
+
+  return commits.flatMap((commit) => eventsPerCommit.get(commit.commit) ?? []);
+}
+
 const LOG_MAX_BUFFER = 64 * 1024 * 1024;
 const BATCH_MAX_BUFFER = 256 * 1024 * 1024;
 
