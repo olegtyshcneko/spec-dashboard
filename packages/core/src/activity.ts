@@ -1,4 +1,6 @@
 import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 import YAML from "yaml";
 
 export type EntryKind = "spec" | "knowledge";
@@ -323,4 +325,90 @@ export function parseLogStream(raw: string): CommitRecord[] {
     }
   }
   return commits;
+}
+
+function git(cwd: string, args: string[], maxBuffer = LOG_MAX_BUFFER): string {
+  return execFileSync("git", ["-C", cwd, ...args], {
+    encoding: "utf8",
+    maxBuffer,
+    stdio: ["ignore", "pipe", "pipe"],
+  }).replace(/\n$/, "");
+}
+
+function gitMeetsMinimum(raw: string): boolean {
+  const match = /git version (\d+)\.(\d+)/.exec(raw);
+  if (!match) return false;
+  const [major, minor] = [Number(match[1]), Number(match[2])];
+  return major > 2 || (major === 2 && minor >= 42);
+}
+
+function shallowBoundary(toplevel: string): Set<string> {
+  try {
+    const shallowFile = git(toplevel, ["rev-parse", "--git-path", "shallow"]);
+    const absolute = path.isAbsolute(shallowFile) ? shallowFile : path.join(toplevel, shallowFile);
+    return new Set(fs.readFileSync(absolute, "utf8").split("\n").filter(Boolean));
+  } catch {
+    return new Set();
+  }
+}
+
+export function extractActivity(root: string, config: { contentDir: string }): ActivityResult {
+  try {
+    if (!gitMeetsMinimum(git(".", ["version"]))) {
+      return { available: false, reason: "git >= 2.42 required for activity extraction", shallow: false, events: [] };
+    }
+    const absoluteRoot = path.resolve(root);
+    const toplevel = git(absoluteRoot, ["rev-parse", "--show-toplevel"]);
+    const shallow = git(absoluteRoot, ["rev-parse", "--is-shallow-repository"]) === "true";
+    const prefix = path
+      .relative(toplevel, path.resolve(absoluteRoot, config.contentDir))
+      .split(path.sep)
+      .join("/");
+    const pathspecs = [
+      prefix ? `${prefix}/specs` : "specs",
+      prefix ? `${prefix}/knowledge` : "knowledge",
+    ];
+
+    let raw = "";
+    try {
+      raw = git(toplevel, [
+        "log",
+        "--first-parent",
+        "--diff-merges=first-parent",
+        "-z",
+        "--name-status",
+        "--find-renames",
+        "--format=%x01%H%x01%ct%x01%an",
+        "--",
+        ...pathspecs,
+      ]);
+    } catch (error) {
+      const message = String(error instanceof Error && "stderr" in error ? (error as { stderr: unknown }).stderr : error);
+      if (/does not have any commits yet|bad default revision/i.test(message)) {
+        return { available: true, shallow, events: [] };
+      }
+      throw error;
+    }
+
+    const commits = parseLogStream(raw);
+    const requests: string[] = [];
+    for (const commit of commits) {
+      for (const record of commit.files) {
+        if (record.status === "D") continue;
+        if (classify(prefix, record.path) === null) continue;
+        requests.push(`${commit.commit}:${record.path}`);
+      }
+    }
+    const blobs = readBlobs(toplevel, requests);
+    const boundary = shallow ? shallowBoundary(toplevel) : new Set<string>();
+    const events = buildEvents(commits, (commit, filePath) => blobs.get(`${commit}:${filePath}`) ?? null, {
+      prefix,
+      boundary,
+    });
+    return { available: true, shallow, events };
+  } catch (error) {
+    const stderr = error && typeof error === "object" && "stderr" in error ? String((error as { stderr: unknown }).stderr).trim() : "";
+    const message = error instanceof Error ? error.message : String(error);
+    return { available: false, reason: stderr || message, shallow: false, events: [] };
+  }
 }

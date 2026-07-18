@@ -281,3 +281,117 @@ test("readBlobs returns content by declared size and null for missing objects", 
   assert.match(blobs.get(`${sha}:content/specs/a.mdx`), /^---\nid: SPEC-001/);
   assert.equal(blobs.get(`${sha}:content/specs/nope.mdx`), null);
 });
+
+import { extractActivity } from "../dist/index.js";
+
+function contentRepo() {
+  const { root, run } = gitRepo();
+  fs.mkdirSync(path.join(root, "content/specs"), { recursive: true });
+  fs.mkdirSync(path.join(root, "content/knowledge"), { recursive: true });
+  const write = (rel, content) => {
+    fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+    fs.writeFileSync(path.join(root, rel), content);
+  };
+  const commitAll = (message, date) => {
+    run("add", "-A");
+    execFileSync("git", ["-C", root, "commit", "-m", message], {
+      encoding: "utf8",
+      env: { ...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date, GIT_AUTHOR_NAME: "Test", GIT_AUTHOR_EMAIL: "t@e.c", GIT_COMMITTER_NAME: "Test", GIT_COMMITTER_EMAIL: "t@e.c" },
+    });
+  };
+  return { root, run, write, commitAll };
+}
+
+const CONFIG = { contentDir: "content" };
+
+test("extractActivity: end-to-end scripted history", () => {
+  const { root, run, write, commitAll } = contentRepo();
+  write("content/specs/a.mdx", spec("SPEC-001", "state: backlog"));
+  commitAll("create", "2026-01-01T10:00:00Z");
+  write("content/specs/a.mdx", spec("SPEC-001", "state: active"));
+  commitAll("activate", "2026-01-02T10:00:00Z");
+  run("mv", "content/specs/a.mdx", "content/specs/renamed.mdx");
+  commitAll("rename", "2026-01-03T10:00:00Z");
+  fs.rmSync(path.join(root, "content/specs/renamed.mdx"));
+  commitAll("delete", "2026-01-04T10:00:00Z");
+
+  const result = extractActivity(root, CONFIG);
+  assert.equal(result.available, true);
+  assert.equal(result.shallow, false);
+  assert.deepEqual(result.events.map((event) => event.type), ["removed", "state-changed", "created"]);
+  assert.equal(result.events.every((event) => event.author === "Test"), true);
+});
+
+test("extractActivity: merge from a side branch attributes to the merge commit", () => {
+  const { root, run, write, commitAll } = contentRepo();
+  write("content/specs/a.mdx", spec("SPEC-001", "state: ready"));
+  commitAll("create", "2026-01-01T10:00:00Z");
+  run("checkout", "-b", "side");
+  write("content/specs/a.mdx", spec("SPEC-001", "state: active"));
+  commitAll("side flip", "2026-01-02T10:00:00Z");
+  run("checkout", "main");
+  execFileSync("git", ["-C", root, "merge", "--no-ff", "side", "-m", "merge side"], {
+    encoding: "utf8",
+    env: { ...process.env, GIT_AUTHOR_DATE: "2026-01-03T10:00:00Z", GIT_COMMITTER_DATE: "2026-01-03T10:00:00Z", GIT_COMMITTER_NAME: "Merger", GIT_COMMITTER_EMAIL: "m@e.c", GIT_AUTHOR_NAME: "Merger", GIT_AUTHOR_EMAIL: "m@e.c" },
+  });
+  const result = extractActivity(root, CONFIG);
+  const flip = result.events.find((event) => event.type === "state-changed");
+  const mergeSha = execFileSync("git", ["-C", root, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  assert.equal(flip.commit, mergeSha);
+  assert.equal(result.events.length, 2); // created + one state change; no side-branch duplicates
+});
+
+test("extractActivity: shallow clone flags shallow and suppresses only boundary created", () => {
+  const { root, write, commitAll } = contentRepo();
+  write("content/specs/a.mdx", spec("SPEC-001", "state: backlog"));
+  commitAll("create a", "2026-01-01T10:00:00Z");
+  write("content/specs/a.mdx", spec("SPEC-001", "state: active"));
+  commitAll("activate a", "2026-01-02T10:00:00Z");
+  write("content/specs/b.mdx", spec("SPEC-002", "state: idea"));
+  commitAll("create b", "2026-01-03T10:00:00Z");
+
+  const cloneParent = fs.mkdtempSync(path.join(os.tmpdir(), "specdash-shallow-"));
+  const clone = path.join(cloneParent, "clone");
+  execFileSync("git", ["clone", "--depth", "2", `file://${root}`, clone], { encoding: "utf8" });
+  const result = extractActivity(clone, CONFIG);
+  assert.equal(result.available, true);
+  assert.equal(result.shallow, true);
+  const types = result.events.map((event) => [event.type, event.entryId]);
+  assert.ok(types.some(([type, id]) => type === "created" && id === "SPEC-002"));
+  assert.ok(!types.some(([type, id]) => type === "created" && id === "SPEC-001"));
+});
+
+test("extractActivity: nested dashboard root inside a larger repo", () => {
+  const { root, write, commitAll } = contentRepo();
+  write("apps/dash/content/specs/n.mdx", spec("SPEC-010", "state: idea"));
+  commitAll("nested", "2026-01-01T10:00:00Z");
+  const result = extractActivity(path.join(root, "apps/dash"), CONFIG);
+  assert.equal(result.available, true);
+  assert.deepEqual(result.events.map((event) => [event.type, event.entryId]), [["created", "SPEC-010"]]);
+});
+
+test("extractActivity: non-repo and empty repo degrade without throwing", () => {
+  const plain = fs.mkdtempSync(path.join(os.tmpdir(), "specdash-norepo-"));
+  const noRepo = extractActivity(plain, CONFIG);
+  assert.equal(noRepo.available, false);
+  assert.ok(noRepo.reason.length > 0);
+
+  const { root } = gitRepo(); // repo with zero commits
+  const empty = extractActivity(root, CONFIG);
+  assert.equal(empty.available, true);
+  assert.deepEqual(empty.events, []);
+});
+
+test("extractActivity: git older than 2.42 degrades with a version reason", () => {
+  const shimDir = fs.mkdtempSync(path.join(os.tmpdir(), "specdash-gitshim-"));
+  fs.writeFileSync(path.join(shimDir, "git"), '#!/bin/sh\necho "git version 2.41.0"\n', { mode: 0o755 });
+  const originalPath = process.env.PATH;
+  process.env.PATH = `${shimDir}:${originalPath}`;
+  try {
+    const result = extractActivity(process.cwd(), CONFIG);
+    assert.equal(result.available, false);
+    assert.match(result.reason, /2\.42/);
+  } finally {
+    process.env.PATH = originalPath;
+  }
+});
