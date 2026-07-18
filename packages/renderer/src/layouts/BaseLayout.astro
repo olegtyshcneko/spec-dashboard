@@ -110,7 +110,10 @@ const pageTitle = title ? `${title} — ${dashboardConfig.project.name}` : dashb
 
       function openSearch() {
         if (dialog.open) return;
-        opener = document.activeElement instanceof HTMLElement ? document.activeElement : trigger;
+        opener =
+          document.activeElement instanceof HTMLElement && document.activeElement !== document.body
+            ? document.activeElement
+            : trigger;
         dialog.showModal();
         input.focus();
         errorBox.hidden = true;
