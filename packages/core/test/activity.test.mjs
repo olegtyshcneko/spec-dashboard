@@ -111,3 +111,33 @@ test("parseLogStream handles a commit with no file records and unknown statuses"
 test("parseLogStream returns [] for empty input", () => {
   assert.deepEqual(parseLogStream(""), []);
 });
+
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { readBlobs } from "../dist/index.js";
+
+function gitRepo() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "specdash-activity-"));
+  const run = (...args) => execFileSync("git", ["-C", root, ...args], {
+    encoding: "utf8",
+    env: { ...process.env, GIT_AUTHOR_DATE: "2026-01-01T00:00:00Z", GIT_COMMITTER_DATE: "2026-01-01T00:00:00Z" },
+  }).trim();
+  run("init", "-b", "main");
+  run("config", "user.email", "test@example.com");
+  run("config", "user.name", "Test");
+  return { root, run };
+}
+
+test("readBlobs returns content by declared size and null for missing objects", () => {
+  const { root, run } = gitRepo();
+  fs.mkdirSync(path.join(root, "content/specs"), { recursive: true });
+  fs.writeFileSync(path.join(root, "content/specs/a.mdx"), "---\nid: SPEC-001\n---\nBody with \n newline and NUL-ish text");
+  run("add", ".");
+  run("commit", "-m", "one");
+  const sha = run("rev-parse", "HEAD");
+  const blobs = readBlobs(root, [`${sha}:content/specs/a.mdx`, `${sha}:content/specs/nope.mdx`]);
+  assert.match(blobs.get(`${sha}:content/specs/a.mdx`), /^---\nid: SPEC-001/);
+  assert.equal(blobs.get(`${sha}:content/specs/nope.mdx`), null);
+});

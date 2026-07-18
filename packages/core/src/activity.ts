@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import YAML from "yaml";
 
 export type EntryKind = "spec" | "knowledge";
@@ -107,6 +108,44 @@ export interface CommitRecord {
   timestamp: number;
   author: string;
   files: StatusRecord[];
+}
+
+const LOG_MAX_BUFFER = 64 * 1024 * 1024;
+const BATCH_MAX_BUFFER = 256 * 1024 * 1024;
+
+export function readBlobs(toplevel: string, requests: string[]): Map<string, string | null> {
+  const result = new Map<string, string | null>();
+  if (requests.length === 0) return result;
+  const input = requests.map((request) => `${request}\u0000`).join("");
+  const out = execFileSync("git", ["-C", toplevel, "cat-file", "--batch", "-Z"], {
+    input,
+    maxBuffer: BATCH_MAX_BUFFER,
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  let offset = 0;
+  for (const request of requests) {
+    const headerEnd = out.indexOf(0, offset);
+    if (headerEnd === -1) {
+      result.set(request, null);
+      continue;
+    }
+    const header = out.toString("utf8", offset, headerEnd);
+    offset = headerEnd + 1;
+    const parts = header.split(" ");
+    if (parts.at(-1) === "missing" || parts.at(-1) === "ambiguous") {
+      result.set(request, null);
+      continue;
+    }
+    const type = parts[1];
+    const size = Number(parts[2]);
+    if (!Number.isFinite(size)) {
+      result.set(request, null);
+      continue;
+    }
+    result.set(request, type === "blob" ? out.toString("utf8", offset, offset + size) : null);
+    offset += size + 1; // payload + trailing NUL
+  }
+  return result;
 }
 
 export function parseLogStream(raw: string): CommitRecord[] {
