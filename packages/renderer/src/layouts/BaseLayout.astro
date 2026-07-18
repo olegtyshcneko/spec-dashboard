@@ -35,9 +35,254 @@ const pageTitle = title ? `${title} — ${dashboardConfig.project.name}` : dashb
           <a href={withBase("knowledge/")}>Knowledge</a>
           <a href={withBase("graph/")}>Graph</a>
           <a href={withBase("health/")}>Health</a>
+          <button type="button" id="search-trigger" class="search-trigger" aria-label="Search">
+            <span class="search-glyph" aria-hidden="true">⌕</span>
+            <span class="search-trigger-label" aria-hidden="true">Search</span>
+            <kbd aria-hidden="true">/</kbd>
+          </button>
         </nav>
       </header>
       <slot />
     </div>
+    <dialog id="search-dialog" class="search-dialog" aria-label="Search" data-index-url={withBase("search-index.json")}>
+      <div class="search-head">
+        <input
+          id="search-input"
+          type="search"
+          role="combobox"
+          aria-expanded="false"
+          aria-controls="search-results"
+          aria-autocomplete="list"
+          aria-label="Search specs and knowledge"
+          placeholder="Search specs and knowledge…"
+          autocomplete="off"
+        />
+        <button type="button" id="search-close" class="search-close">Close</button>
+      </div>
+      <p id="search-status" class="search-status" role="status"></p>
+      <p id="search-error" class="search-error" role="alert" hidden>Search index unavailable.</p>
+      <!-- [html-validate-disable-next prefer-native-element: combobox results need rich rows a native select cannot render] -->
+      <ul id="search-results" class="search-results" role="listbox" aria-label="Search results"></ul>
+    </dialog>
+    <script>
+      import MiniSearch from "minisearch";
+
+      const dialog = document.querySelector("#search-dialog");
+      const trigger = document.querySelector("#search-trigger");
+      const input = document.querySelector("#search-input");
+      const closeButton = document.querySelector("#search-close");
+      const status = document.querySelector("#search-status");
+      const errorBox = document.querySelector("#search-error");
+      const list = document.querySelector("#search-results");
+      const indexUrl = dialog.dataset.indexUrl;
+
+      let indexPromise = null;
+      let mini = null;
+      let results = [];
+      let selected = 0;
+      let opener = null;
+
+      function loadIndex() {
+        if (!indexPromise) {
+          indexPromise = (async () => {
+            const response = await fetch(indexUrl);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const records = await response.json();
+            const instance = new MiniSearch({
+              fields: ["title", "summary", "body", "id", "tags"],
+              storeFields: ["id", "collection", "title", "summary", "state", "url", "body"],
+              searchOptions: {
+                boost: { title: 4, id: 3, summary: 2, tags: 2, body: 1 },
+                prefix: true,
+                fuzzy: 0.2,
+                combineWith: "AND",
+              },
+            });
+            instance.addAll(records);
+            return instance;
+          })();
+          indexPromise.catch(() => {
+            indexPromise = null;
+          });
+        }
+        return indexPromise;
+      }
+
+      function openSearch() {
+        if (dialog.open) return;
+        opener = document.activeElement instanceof HTMLElement ? document.activeElement : trigger;
+        dialog.showModal();
+        input.focus();
+        errorBox.hidden = true;
+        if (mini) {
+          render();
+          return;
+        }
+        dialog.setAttribute("aria-busy", "true");
+        status.textContent = "Loading search index…";
+        loadIndex()
+          .then((instance) => {
+            mini = instance;
+            dialog.removeAttribute("aria-busy");
+            render();
+          })
+          .catch(() => {
+            dialog.removeAttribute("aria-busy");
+            status.textContent = "";
+            errorBox.hidden = false;
+          });
+      }
+
+      function escapeRegExp(value) {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+
+      function buildSnippet(result) {
+        const snippet = document.createElement("p");
+        snippet.className = "search-snippet";
+        const bodyLower = result.body.toLowerCase();
+        const bodyTerm = result.terms.find(
+          (term) => (result.match[term] || []).includes("body") && bodyLower.includes(term.toLowerCase()),
+        );
+        if (!bodyTerm) {
+          snippet.textContent = result.summary;
+          return snippet;
+        }
+        const at = bodyLower.indexOf(bodyTerm.toLowerCase());
+        const start = Math.max(0, at - 60);
+        const end = Math.min(result.body.length, at + bodyTerm.length + 120);
+        const windowText = result.body.slice(start, end);
+        const termSet = new Set(result.terms.map((term) => term.toLowerCase()));
+        const pattern = new RegExp(`(${result.terms.map(escapeRegExp).join("|")})`, "gi");
+        if (start > 0) snippet.append("…");
+        for (const piece of windowText.split(pattern)) {
+          if (!piece) continue;
+          if (termSet.has(piece.toLowerCase())) {
+            const mark = document.createElement("mark");
+            mark.textContent = piece;
+            snippet.append(mark);
+          } else {
+            snippet.append(piece);
+          }
+        }
+        if (end < result.body.length) snippet.append("…");
+        return snippet;
+      }
+
+      function resultRow(result, index) {
+        const row = document.createElement("li");
+        row.id = `search-option-${index}`;
+        row.setAttribute("role", "option");
+        row.setAttribute("aria-selected", "false");
+        row.className = "search-result";
+        const head = document.createElement("div");
+        head.className = "search-result-head";
+        const idBadge = document.createElement("span");
+        idBadge.className = "search-result-id";
+        idBadge.textContent = result.id;
+        head.append(idBadge);
+        if (result.collection === "spec") {
+          const dot = document.createElement("span");
+          dot.className = "search-state-dot";
+          dot.dataset.state = result.state;
+          dot.setAttribute("aria-hidden", "true");
+          const stateText = document.createElement("span");
+          stateText.className = "sr-only";
+          stateText.textContent = result.state;
+          head.append(dot, stateText);
+        }
+        const title = document.createElement("span");
+        title.className = "search-result-title";
+        title.textContent = result.title;
+        head.append(title);
+        row.append(head, buildSnippet(result));
+        row.addEventListener("click", () => {
+          location.href = result.url;
+        });
+        return row;
+      }
+
+      function applySelection() {
+        [...list.children].forEach((row, index) => {
+          row.setAttribute("aria-selected", index === selected ? "true" : "false");
+          row.classList.toggle("is-selected", index === selected);
+        });
+        const active = list.children[selected];
+        if (active) {
+          input.setAttribute("aria-activedescendant", active.id);
+          active.scrollIntoView({ block: "nearest" });
+        } else {
+          input.removeAttribute("aria-activedescendant");
+        }
+      }
+
+      function render() {
+        if (!mini) return;
+        const query = input.value.trim();
+        list.replaceChildren();
+        errorBox.hidden = true;
+        results = [];
+        selected = 0;
+        if (!query) {
+          input.setAttribute("aria-expanded", "false");
+          input.removeAttribute("aria-activedescendant");
+          status.textContent = "Type to search specs and knowledge.";
+          return;
+        }
+        const all = mini.search(query);
+        results = all.slice(0, 20);
+        if (!results.length) {
+          input.setAttribute("aria-expanded", "false");
+          input.removeAttribute("aria-activedescendant");
+          status.textContent = `No matches for “${query}”. Try fewer or different words.`;
+          return;
+        }
+        input.setAttribute("aria-expanded", "true");
+        status.textContent = `Showing ${results.length} of ${all.length} matches`;
+        results.forEach((result, index) => list.append(resultRow(result, index)));
+        applySelection();
+      }
+
+      trigger.addEventListener("click", openSearch);
+      closeButton.addEventListener("click", () => dialog.close());
+      dialog.addEventListener("close", () => {
+        if (opener) opener.focus();
+        opener = null;
+      });
+      input.addEventListener("input", render);
+      input.addEventListener("keydown", (event) => {
+        if (event.isComposing) return;
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          if (selected < results.length - 1) {
+            selected += 1;
+            applySelection();
+          }
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault();
+          if (selected > 0) {
+            selected -= 1;
+            applySelection();
+          }
+        } else if (event.key === "Enter" && results.length) {
+          event.preventDefault();
+          location.href = results[selected].url;
+        }
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.isComposing) return;
+        const target = event.target;
+        const editable =
+          target instanceof HTMLElement &&
+          (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
+        if (editable) return;
+        const isSlash = event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
+        const isK = (event.key === "k" || event.key === "K") && (event.ctrlKey || event.metaKey) && !event.altKey;
+        if (isSlash || isK) {
+          event.preventDefault();
+          openSearch();
+        }
+      });
+    </script>
   </body>
 </html>
