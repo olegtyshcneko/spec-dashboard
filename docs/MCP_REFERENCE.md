@@ -3,7 +3,7 @@
 The Spec Dashboard MCP server exposes a validated project model over stdio. It is intended to run once per target repository with an explicit project root.
 
 ```sh
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.7.0 \
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.8.0 \
   specdash-mcp --root /absolute/path/to/project
 ```
 

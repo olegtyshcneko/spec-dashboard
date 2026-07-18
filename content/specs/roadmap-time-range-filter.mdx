@@ -1,0 +1,57 @@
+---
+schemaVersion: 1
+id: SPEC-011
+title: Roadmap time range filter
+summary: Narrow the roadmap to a time window such as the last quarter or the next ninety days alongside the existing filters.
+kind: feature
+state: shipped
+priority: p2
+milestone: v0-8-0
+categories: [experience]
+tags: [roadmap, filters, dates]
+owners: [maintainer]
+blockers: []
+dependsOn: [SPEC-008]
+related: [SPEC-009]
+sourceRefs:
+  - type: file
+    value: packages/renderer/src/pages/roadmap/index.astro
+  - type: file
+    value: docs/superpowers/specs/2026-07-15-roadmap-time-range-filter-design.md
+  - type: file
+    value: docs/superpowers/plans/2026-07-15-roadmap-time-range-filter.md
+created: 2026-07-15
+updated: 2026-07-18
+---
+
+## Intent
+
+Let a reader answer "what shipped in the last month" or "what is due next quarter" in one click, without disturbing the scope, milestone, state, and search filters they already use.
+
+## Acceptance criteria
+
+- [x] Add a labeled Time range select to the roadmap toolbar with All time, Last 30 days, Last 90 days, Last year, Next 90 days, and This year options.
+- [x] Emit build-time `data-date-start` and `data-date-end` ISO intervals on every dated roadmap group in both timeline and list panels.
+- [x] Match groups by interval overlap so an in-flight milestone appears in both past and future windows; undated groups match only All time.
+- [x] Persist the selection in the URL as `range=`, compose with all existing filters, and reset it with Clear filters.
+- [x] Keep the count line and disabled-state logic of the toolbar consistent with the new filter.
+
+## Plan
+
+1. Emit milestone date intervals as data attributes on roadmap groups at build time.
+2. Add the toolbar select and window computation, wiring overlap matching into the shared render pass.
+3. Verify URL persistence, filter composition, and the built output.
+
+## Verification
+
+- Automated core and MCP suites pass; the built roadmap page carries date attributes on exactly the dated groups.
+- Browser checks confirmed each window against the configured milestone dates, URL round-tripping, and mobile layout.
+
+## Risks
+
+- Windows are computed from the reader's clock, so results legitimately differ by day and timezone.
+- Milestones missing dates silently fall out of every bounded window; validation of milestone dates mitigates this.
+
+## Out of scope
+
+Custom date-range pickers and per-specification (rather than per-milestone) date filtering.

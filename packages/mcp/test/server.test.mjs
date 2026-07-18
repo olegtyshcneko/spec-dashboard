@@ -25,11 +25,13 @@ test("serves resources and structured tools over stdio", async () => {
 
     const result = await client.callTool({ name: "specdash.validate", arguments: {} });
     assert.equal(result.structuredContent.valid, true);
-    assert.equal(result.structuredContent.specs, 8);
+    assert.equal(result.structuredContent.specs, 11);
     const scan = await client.callTool({ name: "specdash.scan", arguments: {} });
-    assert.equal(scan.structuredContent.nextSpecId, "SPEC-009");
-    const milestone = await client.callTool({ name: "specdash.query", arguments: { collection: "specs", milestone: "v0-7-0" } });
-    assert.deepEqual(milestone.structuredContent.entries.map((entry) => entry.id), ["SPEC-008"]);
+    assert.equal(scan.structuredContent.nextSpecId, "SPEC-012");
+    const milestone = await client.callTool({ name: "specdash.query", arguments: { collection: "specs", milestone: "v0-8-0" } });
+    assert.deepEqual(milestone.structuredContent.entries.map((entry) => entry.id).sort(), ["SPEC-009", "SPEC-010", "SPEC-011"]);
+    const previousMilestone = await client.callTool({ name: "specdash.query", arguments: { collection: "specs", milestone: "v0-7-0" } });
+    assert.deepEqual(previousMilestone.structuredContent.entries.map((entry) => entry.id), ["SPEC-008"]);
     const historicalMilestone = await client.callTool({ name: "specdash.query", arguments: { collection: "specs", milestone: "v0-6-0" } });
     assert.deepEqual(historicalMilestone.structuredContent.entries.map((entry) => entry.id), ["SPEC-007"]);
     const reconciliation = await client.callTool({ name: "specdash.reconcile", arguments: { since: "HEAD~1" } });

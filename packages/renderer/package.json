@@ -1,6 +1,6 @@
 {
   "name": "@spec-dashboard/renderer",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.2",
-    "@spec-dashboard/core": "0.7.0",
+    "@spec-dashboard/core": "0.8.0",
     "astro": "^7.0.7"
   }
 }

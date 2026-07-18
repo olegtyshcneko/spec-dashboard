@@ -59,6 +59,12 @@ milestones:
     status: completed
     startDate: 2026-07-14
     completedDate: 2026-07-14
+  - id: v0-8-0
+    label: v0.8.0 · Roadmap clarity
+    description: Roadmap design clarity, legible self-hosted typography, and time-range filtering.
+    status: completed
+    startDate: 2026-07-14
+    completedDate: 2026-07-18
   - id: next-release
     label: Next release
     description: Planned work intended for the next versioned delivery.

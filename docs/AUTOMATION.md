@@ -10,7 +10,7 @@ Use one reviewed release everywhere:
 
 ```yaml
 env:
-  SPECDASH_REF: v0.7.0
+  SPECDASH_REF: v0.8.0
 ```
 
 Keep the automation ref aligned with the Codex plugin `.mcp.json`. Do not point production CI at an unreviewed moving branch.
@@ -35,7 +35,7 @@ permissions:
   contents: read
 
 env:
-  SPECDASH_REF: v0.7.0
+  SPECDASH_REF: v0.8.0
 
 jobs:
   validate:
@@ -102,7 +102,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SPECDASH_REF: v0.7.0
+  SPECDASH_REF: v0.8.0
 
 jobs:
   build:
@@ -208,13 +208,13 @@ Keep this guidance descriptive. Do not force documentation churn for typo-only c
 For a manual pre-push check:
 
 ```sh
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.7.0 \
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.8.0 \
   specdash validate --root .
 
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.7.0 \
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.8.0 \
   specdash reconcile --root . --since origin/main
 
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.7.0 \
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.8.0 \
   specdash build --root .
 ```
 

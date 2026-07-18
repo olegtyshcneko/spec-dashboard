@@ -45,7 +45,7 @@ The renderer produces:
 - `/index.html` with searchable state-filtered specifications;
 - `/specs/<id>/index.html` for every specification;
 - `/knowledge/index.html` and one page per knowledge entry;
-- `/roadmap/index.html` with URL-backed scope filters plus switchable vertical timeline/list projections of configured milestones and unscheduled open work;
+- `/roadmap/index.html` with URL-backed scope and time-range filters plus switchable vertical timeline/list projections of configured milestones and unscheduled open work;
 - `/graph/index.html` and `/health/index.html`;
 - `/project.json` as the machine-readable static projection.
 

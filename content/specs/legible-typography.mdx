@@ -1,0 +1,59 @@
+---
+schemaVersion: 1
+id: SPEC-010
+title: Legible self-hosted typography
+summary: Adopt self-hosted Atkinson Hyperlegible Next and JetBrains Mono with a larger type scale and a mono display identity.
+kind: chore
+state: shipped
+priority: p2
+milestone: v0-8-0
+categories: [experience]
+tags: [typography, fonts, identity, accessibility]
+owners: [maintainer]
+blockers: []
+dependsOn: []
+related: [SPEC-009]
+sourceRefs:
+  - type: file
+    value: assets/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2
+  - type: file
+    value: assets/style.css
+  - type: file
+    value: packages/renderer/src/layouts/BaseLayout.astro
+  - type: file
+    value: packages/renderer/src/styles/global.css
+created: 2026-07-14
+updated: 2026-07-18
+---
+
+## Intent
+
+Give the dashboard a distinctive, highly legible identity that works offline: readable body text at a larger scale, a monospace display face for headings and data, and no runtime dependency on font CDNs.
+
+## Acceptance criteria
+
+- [x] Self-host Atkinson Hyperlegible Next (normal and italic variable weights) and JetBrains Mono as woff2 with their licenses committed beside them.
+- [x] Load fonts from the static assets directory so built dashboards work fully offline and on any static host.
+- [x] Raise the base type scale for comfortable reading and keep faint mono text at or above the recorded contrast floor.
+- [x] Use the mono display face for headings, stats, and identity moments; drop redundant slug chips and add a favicon.
+
+## Plan
+
+1. Select legible faces and download latin variable-weight woff2 subsets with licenses.
+2. Wire `@font-face` declarations into the shared stylesheet and layout head.
+3. Apply the display face and revised type scale across pages, removing redundant identity elements.
+4. Verify rendering across pages at desktop and mobile widths.
+
+## Verification
+
+- Built pages reference only local font files; no external font requests remain.
+- Desktop and mobile Playwright screenshots confirmed the new faces and scale on the index, roadmap, and spec detail pages.
+
+## Risks
+
+- Latin-only subsets limit non-Latin content; additional subsets would need the same self-hosting treatment.
+- Variable-font woff2 files add repository weight per added face.
+
+## Out of scope
+
+Theme switching and any further identity work beyond typography, favicon, and chip cleanup.

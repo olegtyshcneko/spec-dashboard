@@ -1,0 +1,62 @@
+---
+schemaVersion: 1
+id: SPEC-009
+title: Roadmap design clarity improvements
+summary: Focus the roadmap on current delivery by collapsing history, correcting status color roles, and cleaning up the toolbar.
+kind: feature
+state: shipped
+priority: p1
+milestone: v0-8-0
+categories: [experience]
+tags: [roadmap, design, hierarchy, accessibility]
+owners: [maintainer]
+blockers: []
+dependsOn: [SPEC-008]
+related: [SPEC-010]
+sourceRefs:
+  - type: file
+    value: packages/renderer/src/pages/roadmap/index.astro
+  - type: file
+    value: packages/renderer/src/styles/global.css
+  - type: file
+    value: docs/DESIGN_REVIEW_ROADMAP.md
+  - type: file
+    value: docs/superpowers/plans/2026-07-14-roadmap-design-improvements.md
+created: 2026-07-14
+updated: 2026-07-18
+---
+
+## Intent
+
+Apply the roadmap design review so the page reads as one clear delivery story: history stays available but quiet, the active milestone is the single bold moment, and the toolbar behaves like one coherent instrument.
+
+## Acceptance criteria
+
+- [x] Collapse completed milestones into one-line summary rows while active and planned milestones render expanded; work-state filters force matching rows open.
+- [x] Surface the most recently shipped milestone on the default current scope with a directive empty state that names the concrete next action.
+- [x] Correct status color roles: planned work is neutral blue, completed progress is quiet green, and the animated gradient is reserved for the active milestone's real partial progress.
+- [x] Slim the timeline rail to a dotted spine, humanize display dates, and relabel stat tiles with explicit units.
+- [x] Clean up the toolbar: labeled scope control, relocated view switch, styled selects, and a clear-filters button that disables when nothing is filtered and restores collapsed history.
+- [x] Keep summary markup valid phrasing content so the built site passes html-validate.
+
+## Plan
+
+1. Review the rendered roadmap and record findings with severities in the design review document.
+2. Implement the P0 hierarchy, landing, and color-role fixes.
+3. Implement the P1 rail, date, count, and toolbar refinements.
+4. Verify with the automated suites, html-validate, and a desktop plus mobile Playwright sweep.
+
+## Verification
+
+- Core and MCP test suites pass alongside html-validate on the built output.
+- Desktop (1440×900) and mobile (390×844) Playwright sweeps covered every page after the changes.
+- The design review document records each finding and its implemented resolution.
+
+## Risks
+
+- Collapsed-by-default history can hide context stakeholders expect in screenshots; the one-click Completed scope mitigates this.
+- Color-role conventions must stay consistent as new states or views are added.
+
+## Out of scope
+
+Time-window filtering (SPEC-011) and the full typography identity pass (SPEC-010).
