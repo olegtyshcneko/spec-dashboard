@@ -3,3 +3,4 @@ export * from "./project.js";
 export * from "./lifecycle.js";
 export * from "./reconcile.js";
 export * from "./search-text.js";
+export * from "./activity.js";
