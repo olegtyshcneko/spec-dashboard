@@ -247,6 +247,7 @@ The generated dashboard provides:
 - Search and URL-backed filters by ID, title, summary, milestone, category, owner, or tag.
 - Checklist progress derived from Markdown.
 - A filter-first roadmap with Current/All/Completed scope, milestone/work-state/time-range/search filters, and switchable vertical timeline/list views.
+- Global full-text search from every page: `/` or `Ctrl+K` opens a dialog that ranks specs and knowledge by title, summary, id, tags, and body text, with highlighted snippets.
 - Health diagnostics for invalid, stale, or operationally incomplete entries.
 - Knowledge pages connected to specifications by generated backlinks.
 - A relationship Map/List switcher with category, lifecycle, and neighborhood scoping.

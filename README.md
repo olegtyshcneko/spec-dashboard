@@ -82,6 +82,7 @@ The generated site includes:
 - a filter-first milestone roadmap with switchable vertical timeline/list views, delivery progress, collapsed completed history, time-range filtering, and unscheduled work;
 - dependency, related-entry, and backlink views;
 - a graphical Map/List relationship explorer with category, lifecycle, neighborhood, and zoom controls;
+- a global full-text search dialog (`/` or `Ctrl+K`) over spec and knowledge bodies with ranked, highlighted results;
 - a health page for schema and readiness diagnostics;
 - a knowledge index connected to the work it informs.
 

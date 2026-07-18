@@ -1,0 +1,55 @@
+---
+schemaVersion: 1
+id: SPEC-012
+title: Global full-text search
+summary: Find any specification or knowledge entry by words in its body from a search dialog available on every page.
+kind: feature
+state: shipped
+priority: p1
+milestone: next-release
+categories: [experience]
+tags: [search, filters, accessibility]
+owners: [maintainer]
+blockers: []
+dependsOn: [SPEC-001]
+related: [SPEC-003]
+sourceRefs:
+  - type: file
+    value: packages/core/src/search-text.ts
+  - type: file
+    value: packages/renderer/src/pages/search-index.json.ts
+  - type: file
+    value: packages/renderer/src/layouts/BaseLayout.astro
+  - type: file
+    value: docs/superpowers/specs/2026-07-18-full-text-search-design.md
+created: 2026-07-18
+updated: 2026-07-18
+---
+
+## Intent
+
+Let a reader find work and knowledge by words in the prose, not just frontmatter metadata, without leaving the page they are on.
+
+## Acceptance criteria
+
+- [x] Emit a build-time search index with one plaintext record per non-archived specification and knowledge entry.
+- [x] Convert MDX bodies to searchable plaintext through the remark AST, keeping code text and dropping ESM, expressions, and JSX syntax.
+- [x] Open a global search dialog from every page via a header control, `/`, `Ctrl+K`, or `Meta+K`, honoring editable-target and composition guards.
+- [x] Rank results with boosted title/id/summary matching, AND term combination, prefix and fuzzy matching, and highlighted body snippets.
+- [x] Meet the modal combobox accessibility contract: focus trapping, accessible names, live status, non-color selection cues, and focus restoration.
+- [x] Handle index load failures with a visible alert and a real retry on reopen.
+
+## Verification
+
+- Core unit tests cover the MDX plaintext transform fixtures and cap behavior.
+- Build assertions verify record counts, string fields, and subpath base prefixes.
+- A Playwright sweep verified open paths, body-only matching, snippet highlighting, keyboard navigation, failure retry, and the 390px layout.
+
+## Risks
+
+- The bundled index grows with content volume; the documented scale guidance (category-scoped dashboards beyond hundreds of entries) bounds it.
+- Search quality depends on the plaintext transform staying faithful as MDX usage evolves.
+
+## Out of scope
+
+Section-level deep links, URL persistence of queries, search analytics, and archived-entry indexing.

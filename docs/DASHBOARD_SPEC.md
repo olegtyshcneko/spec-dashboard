@@ -47,6 +47,7 @@ The renderer produces:
 - `/knowledge/index.html` and one page per knowledge entry;
 - `/roadmap/index.html` with URL-backed scope and time-range filters plus switchable vertical timeline/list projections of configured milestones and unscheduled open work;
 - `/graph/index.html` and `/health/index.html`;
+- `/search-index.json` with one plaintext search record per non-archived specification and knowledge entry, consumed by the global search dialog present on every page;
 - `/project.json` as the machine-readable static projection.
 
 The site remains static and backend-free after compilation.
