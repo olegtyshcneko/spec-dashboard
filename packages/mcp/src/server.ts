@@ -29,7 +29,7 @@ export function createSpecDashboardServer(rootInput: string): McpServer {
   const root = fs.realpathSync(path.resolve(rootInput));
   let changes: ChangeStore | undefined;
   const changeStore = () => changes ??= new ChangeStore(root);
-  const server = new McpServer({ name: "spec-dashboard", version: "0.8.0" });
+  const server = new McpServer({ name: "spec-dashboard", version: "0.8.1" });
 
   const readJson = (uri: string, value: unknown) => ({ contents: [{ uri, mimeType: "application/json", text: JSON.stringify(value, null, 2) }] });
 
