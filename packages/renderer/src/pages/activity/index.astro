@@ -6,6 +6,11 @@ import { activity, hrefFor, snapshot } from "../../lib/project";
 const EVENT_TYPES = ["created", "state-changed", "milestone-changed", "priority-changed", "updated", "removed"];
 const liveIds = new Set([...snapshot.specs, ...snapshot.knowledge].map((entry) => entry.id));
 const rows = mergeUpdated(activity.events);
+const countByType = Object.fromEntries(EVENT_TYPES.map((type) => [type, rows.filter((row) => row.type === type).length]));
+const countByKind = {
+  spec: rows.filter((row) => row.entryKind === "spec").length,
+  knowledge: rows.filter((row) => row.entryKind === "knowledge").length,
+};
 const days: Array<{ date: string; rows: typeof rows }> = [];
 for (const row of rows) {
   const last = days.at(-1);
@@ -35,26 +40,42 @@ for (const row of rows) {
 
     {activity.available && (
       <>
-        <div class="activity-filters">
-          <label>Type
-            <select id="activity-type">
-              <option value="all">All</option>
-              {EVENT_TYPES.map((type) => <option value={type}>{type}</option>)}
-            </select>
-          </label>
-          <label>Kind
-            <select id="activity-kind">
-              <option value="all">All</option>
-              <option value="spec">Spec</option>
-              <option value="knowledge">Knowledge</option>
-            </select>
-          </label>
-          <label>Filter
-            <input id="activity-q" type="search" placeholder="Filter by id, title, change…" autocomplete="off" />
-          </label>
+        <div class="activity-toolbar">
+          <div class="activity-type-chips" role="group" aria-label="Filter by event type">
+            <button type="button" class="type-chip" data-filter-type="all" aria-pressed="true">
+              all <span class="type-chip-count">{rows.length}</span>
+            </button>
+            {EVENT_TYPES.map((type) => (
+              <button
+                type="button"
+                class="type-chip"
+                data-filter-type={type}
+                data-event={type}
+                aria-pressed="false"
+                disabled={countByType[type] === 0}
+              >
+                <i class="type-chip-dot"></i>{type.replace("-changed", "")}
+                <span class="type-chip-count">{countByType[type]}</span>
+              </button>
+            ))}
+          </div>
+          <div class="activity-toolbar-row">
+            <div class="activity-kind-switch" role="group" aria-label="Filter by entry kind">
+              <button type="button" data-filter-kind="all" aria-pressed="true">All</button>
+              <button type="button" data-filter-kind="spec" aria-pressed="false">Specs <small>{countByKind.spec}</small></button>
+              <button type="button" data-filter-kind="knowledge" aria-pressed="false">Knowledge <small>{countByKind.knowledge}</small></button>
+            </div>
+            <input
+              id="activity-q"
+              class="activity-search"
+              type="search"
+              placeholder="Filter by id, title, change…"
+              autocomplete="off"
+              aria-label="Filter by id, title, or change"
+            />
+            <p class="activity-count" id="activity-count" role="status"></p>
+          </div>
         </div>
-
-        <p class="activity-count" id="activity-count" role="status"></p>
         <div class="activity-empty" id="activity-empty" role="status" hidden>
           No activity matches these filters. Clear a filter to see more.
         </div>
@@ -92,8 +113,8 @@ for (const row of rows) {
 
   {activity.available && (
     <script>
-      const typeSelect = document.querySelector("#activity-type");
-      const kindSelect = document.querySelector("#activity-kind");
+      const typeChips = [...document.querySelectorAll("[data-filter-type]")];
+      const kindButtons = [...document.querySelectorAll("[data-filter-kind]")];
       const queryInput = document.querySelector("#activity-q");
       const countLine = document.querySelector("#activity-count");
       const emptyState = document.querySelector("#activity-empty");
@@ -102,14 +123,16 @@ for (const row of rows) {
       const TYPES = ["created", "state-changed", "milestone-changed", "priority-changed", "updated", "removed"];
       const KINDS = ["spec", "knowledge"];
 
+      let type = "all";
+      let kind = "all";
       const params = new URLSearchParams(location.search);
-      if (TYPES.includes(params.get("type") ?? "")) typeSelect.value = params.get("type");
-      if (KINDS.includes(params.get("kind") ?? "")) kindSelect.value = params.get("kind");
+      if (TYPES.includes(params.get("type") ?? "")) type = params.get("type");
+      if (KINDS.includes(params.get("kind") ?? "")) kind = params.get("kind");
       queryInput.value = params.get("q") ?? "";
 
       function apply() {
-        const type = typeSelect.value;
-        const kind = kindSelect.value;
+        for (const chip of typeChips) chip.setAttribute("aria-pressed", String(chip.dataset.filterType === type));
+        for (const button of kindButtons) button.setAttribute("aria-pressed", String(button.dataset.filterKind === kind));
         const query = queryInput.value.trim().toLowerCase();
         let shown = 0;
         for (const row of rows) {
@@ -132,8 +155,18 @@ for (const row of rows) {
         history.replaceState(null, "", next.size > 0 ? `?${next}` : location.pathname);
       }
 
-      typeSelect.addEventListener("change", apply);
-      kindSelect.addEventListener("change", apply);
+      for (const chip of typeChips) {
+        chip.addEventListener("click", () => {
+          type = chip.dataset.filterType === type ? "all" : chip.dataset.filterType;
+          apply();
+        });
+      }
+      for (const button of kindButtons) {
+        button.addEventListener("click", () => {
+          kind = button.dataset.filterKind;
+          apply();
+        });
+      }
       queryInput.addEventListener("input", apply);
       apply();
     </script>
