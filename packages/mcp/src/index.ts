@@ -11,7 +11,7 @@ function rootArgument(): string {
 async function main(): Promise<void> {
   const server = createSpecDashboardServer(rootArgument());
   await server.connect(new StdioServerTransport());
-console.error("Spec Dashboard MCP 0.8.1 running over stdio");
+console.error("Spec Dashboard MCP 0.9.0 running over stdio");
 }
 
 main().catch((error: unknown) => {
