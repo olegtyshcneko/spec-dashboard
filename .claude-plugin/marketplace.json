@@ -1,0 +1,15 @@
+{
+  "name": "spec-dashboard",
+  "owner": {
+    "name": "Oleg Tyshchenko"
+  },
+  "description": "Git-native specification, planning, backlog, and knowledge dashboards.",
+  "plugins": [
+    {
+      "name": "spec-dashboard",
+      "source": "./plugins/spec-dashboard",
+      "description": "Create validated MDX specifications, reconcile them with project evidence, review readiness, and generate a static planning and knowledge dashboard.",
+      "category": "productivity"
+    }
+  ]
+}

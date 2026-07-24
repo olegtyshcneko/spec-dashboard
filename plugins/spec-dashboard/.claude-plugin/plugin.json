@@ -1,0 +1,32 @@
+{
+  "name": "spec-dashboard",
+  "displayName": "Spec Dashboard",
+  "version": "0.8.0",
+  "description": "Build and maintain a Git-native specification, planning, backlog, and knowledge dashboard.",
+  "author": {
+    "name": "Oleg Tyshchenko",
+    "url": "https://github.com/olegtyshcneko"
+  },
+  "homepage": "https://github.com/olegtyshcneko/spec-dashboard",
+  "repository": "https://github.com/olegtyshcneko/spec-dashboard",
+  "license": "MIT",
+  "keywords": [
+    "specifications",
+    "planning",
+    "backlog",
+    "knowledge",
+    "mcp"
+  ],
+  "mcpServers": {
+    "spec-dashboard": {
+      "command": "npx",
+      "args": [
+        "--yes",
+        "--package=github:olegtyshcneko/spec-dashboard#v0.8.0",
+        "specdash-mcp",
+        "--root",
+        "${CLAUDE_PROJECT_DIR}"
+      ]
+    }
+  }
+}

@@ -17,7 +17,7 @@
     "mcp"
   ],
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
+  "mcpServers": "./mcp.codex.json",
   "interface": {
     "displayName": "Spec Dashboard",
     "shortDescription": "Build and maintain project specification dashboards",
