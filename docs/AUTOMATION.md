@@ -13,7 +13,7 @@ env:
   SPECDASH_REF: v0.8.0
 ```
 
-Keep the automation ref aligned with the Codex plugin `.mcp.json`. Do not point production CI at an unreviewed moving branch.
+Keep the automation ref aligned with the plugin MCP configuration (`plugins/spec-dashboard/mcp.codex.json`). Do not point production CI at an unreviewed moving branch.
 
 ## Pull request validation
 

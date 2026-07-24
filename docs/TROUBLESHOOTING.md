@@ -10,7 +10,7 @@ Many apparent behavior differences are version mismatches. Check:
 codex plugin list --json
 ```
 
-Inspect the installed `spec-dashboard` version and the Git ref in the active plugin `.mcp.json`. Documentation on `main` may describe changes that are not in the currently pinned release.
+Inspect the installed `spec-dashboard` version and the Git ref in the active plugin MCP configuration (`mcp.codex.json` under Codex, the `mcpServers` block of `.claude-plugin/plugin.json` under Claude Code). Documentation on `main` may describe changes that are not in the currently pinned release.
 
 Test the tagged CLI independently:
 
@@ -250,6 +250,19 @@ Compare:
 - Build base override.
 
 Run the exact tagged CI commands locally before changing workflow logic.
+
+## The plugin MCP server scans the wrong directory
+
+Symptom: under Claude Code, dashboard tools report no project, an uninitialized project, or entries from an unrelated directory.
+
+The Claude Code plugin launches the server with `--root ${CLAUDE_PROJECT_DIR}`. Claude Code substitutes that variable with the open project directory; plugin MCP servers are not guaranteed to start with the project as their working directory, so a configuration using `--root .` would resolve against the plugin installation instead.
+
+Check the `mcpServers` block of the installed `.claude-plugin/plugin.json`:
+
+- if it passes `--root .`, it is a Codex configuration reaching Claude Code — reinstall the plugin;
+- if it passes the literal string `${CLAUDE_PROJECT_DIR}` through to the server, the Claude Code build is too old to substitute plugin MCP variables — upgrade Claude Code.
+
+`claude mcp list` prints each plugin server's fully resolved command, so the root it actually received is visible there; the server also exits with an error naming that root in the MCP server logs.
 
 ## Collect useful diagnostic information
 

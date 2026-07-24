@@ -7,7 +7,7 @@ npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.8.0 \
   specdash-mcp --root /absolute/path/to/project
 ```
 
-The Codex plugin uses the same command with `--root .`. See the [user guide](USER_GUIDE.md) for the recommended natural-language workflow.
+The Codex plugin uses the same command with `--root .`; the Claude Code plugin uses `--root ${CLAUDE_PROJECT_DIR}`, which Claude Code substitutes with the open project directory. See the [user guide](USER_GUIDE.md) for the recommended natural-language workflow.
 
 ## Root and content boundaries
 
@@ -243,7 +243,7 @@ Keep these versions aligned:
 
 - Plugin manifest version.
 - Git release used by the marketplace.
-- Git release in `.mcp.json`.
+- Git release pinned in the plugin MCP configuration (`mcp.codex.json` and the Claude manifest's `mcpServers` block).
 - CLI and MCP package versions.
 
 If behavior differs from this reference, first check which Git tag the active MCP command actually runs.

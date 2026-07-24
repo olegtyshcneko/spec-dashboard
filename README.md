@@ -50,6 +50,25 @@ After approval, the workflow creates `specdash.config.yaml`, canonical MDX under
 
 Read the [user guide](docs/USER_GUIDE.md) before rolling the workflow out to a team.
 
+## Five-minute Claude Code quickstart
+
+Add the marketplace and install the plugin:
+
+```sh
+/plugin marketplace add olegtyshcneko/spec-dashboard
+/plugin install spec-dashboard@spec-dashboard
+```
+
+Open the repository you want to document, then run `/spec-dashboard:bootstrap-spec-dashboard` to inspect the project and create a reviewed dashboard baseline. The skills are also model-invocable — asking for a dashboard in plain language reaches the same workflows.
+
+Continue with:
+
+- `/spec-dashboard:capture-spec-work` — capture an issue, PR, or plan as a validated specification;
+- `/spec-dashboard:reconcile-spec-dashboard` — compare documentation with Git evidence;
+- `/spec-dashboard:review-spec-quality` — critique readiness without editing.
+
+The bundled MCP server scopes itself to the open project via `${CLAUDE_PROJECT_DIR}`, and the plugin runtime is pinned to a tagged release. Unlike the Codex marketplace ref, the Claude Code marketplace tracks `main`; `/plugin update` offers a new version only when the plugin version changes.
+
 ## Use this repository
 
 ```sh
@@ -125,7 +144,7 @@ Specification frontmatter separates lifecycle from kind and priority:
 
 ```yaml
 schemaVersion: 1
-id: SPEC-014
+id: SPEC-140
 title: Offline dashboard publishing
 summary: Generate a portable dashboard for every release.
 kind: feature

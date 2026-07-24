@@ -38,7 +38,7 @@ Spec Dashboard is not a passive documentation daemon. Skills activate when a use
 - Git repository containing the project to document.
 - Node.js 22.12 or newer.
 - npm 10 or newer.
-- Codex with plugin support for the recommended workflow.
+- Codex or Claude Code with plugin support for the recommended workflow.
 - Network access on the first MCP launch so `npx` can obtain the pinned Git release.
 
 ## Install the Codex plugin
@@ -53,6 +53,19 @@ codex plugin add spec-dashboard@spec-dashboard
 Then open the target repository as the active Codex project. The bundled MCP command uses `--root .`; therefore the MCP process must start with the target repository as its working directory.
 
 The release ref is intentionally explicit. Before upgrading, review the newer release notes and update the marketplace ref. Documentation on `main` can describe work newer than the currently pinned plugin release.
+
+## Install the Claude Code plugin
+
+Run these commands once inside Claude Code:
+
+```sh
+/plugin marketplace add olegtyshcneko/spec-dashboard
+/plugin install spec-dashboard@spec-dashboard
+```
+
+The four workflows then appear as `/spec-dashboard:bootstrap-spec-dashboard`, `/spec-dashboard:capture-spec-work`, `/spec-dashboard:reconcile-spec-dashboard`, and `/spec-dashboard:review-spec-quality`, and remain available to the model without an explicit command.
+
+The bundled MCP command passes `--root ${CLAUDE_PROJECT_DIR}`, so the server scopes to the project Claude Code has open rather than to its own installation directory. The marketplace tracks `main`; the plugin version pins the runtime, so `/plugin update` surfaces a new release only when that version changes.
 
 ## Bootstrap a project
 
@@ -119,7 +132,7 @@ Ask Codex to query the canonical model rather than scan every file:
 
 > What active items are unowned or missing a next action?
 
-> Show the knowledge entries connected to `SPEC-014`.
+> Show the knowledge entries connected to `SPEC-140`.
 
 ### Capture new work
 
@@ -131,7 +144,7 @@ The skill queries existing entries before allocating a new ID, distinguishes kin
 
 ### Update existing work
 
-> Update `SPEC-014` with the agreed non-goals and the new API test evidence. Preserve its ID and historical decisions.
+> Update `SPEC-140` with the agreed non-goals and the new API test evidence. Preserve its ID and historical decisions.
 
 > Record this blocker and set the next action to the smallest unblocking experiment.
 
@@ -160,7 +173,7 @@ Specification states are operational, not decorative:
 
 Use explicit transitions:
 
-> Move `SPEC-014` to review and attach PR #87 as evidence. Preview the transition first.
+> Move `SPEC-140` to review and attach PR #87 as evidence. Preview the transition first.
 
 The MCP enforces the allowed state machine. It does not mark an item shipped because code exists, a branch name matches, or a PR is open. Shipping should retain release or verification evidence.
 
@@ -195,7 +208,7 @@ The roadmap puts scope controls before its content. It defaults to `Current`, wh
 
 After the configuration is reviewed in Git, use the capture workflow to assign work:
 
-> Add SPEC-014 to the configured next-release milestone. Preserve its lifecycle and priority, and preview the content change before applying it.
+> Add SPEC-140 to the configured next-release milestone. Preserve its lifecycle and priority, and preview the content change before applying it.
 
 ## Reconcile after implementation changes
 
@@ -271,6 +284,6 @@ The Spec Dashboard MCP owns the local canonical store and renderer. It does not 
 
 ## Update or remove the integration
 
-To update, install a newer reviewed marketplace ref and plugin version. Ensure the plugin manifest and `.mcp.json` point to the same release.
+To update, install a newer reviewed marketplace ref and plugin version. Ensure the plugin manifest and its MCP configuration (`mcp.codex.json` for Codex, the inline `mcpServers` block for Claude Code) point to the same release.
 
 To stop using the system, remove or disable the plugin through Codex. The repository content remains ordinary YAML and MDX in Git; no hosted service owns it.
