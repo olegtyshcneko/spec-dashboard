@@ -34,7 +34,7 @@ Every entry has versioned frontmatter. The core validates schema, category, mile
 Install the versioned marketplace and plugin:
 
 ```sh
-codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.8.0
+codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.10.0
 codex plugin add spec-dashboard@spec-dashboard
 ```
 

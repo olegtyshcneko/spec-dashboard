@@ -1,7 +1,7 @@
 {
   "name": "spec-dashboard",
   "displayName": "Spec Dashboard",
-  "version": "0.8.0",
+  "version": "0.10.0",
   "description": "Build and maintain a Git-native specification, planning, backlog, and knowledge dashboard.",
   "author": {
     "name": "Oleg Tyshchenko",
@@ -22,7 +22,7 @@
       "command": "npx",
       "args": [
         "--yes",
-        "--package=github:olegtyshcneko/spec-dashboard#v0.8.0",
+        "--package=github:olegtyshcneko/spec-dashboard#v0.10.0",
         "specdash-mcp",
         "--root",
         "${CLAUDE_PROJECT_DIR}"

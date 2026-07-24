@@ -4,13 +4,12 @@ id: SPEC-015
 title: Claude Code plugin packaging
 summary: Ship the existing plugin skills and MCP server to Claude Code alongside Codex from one shared plugin directory.
 kind: feature
-state: active
+state: shipped
 priority: p1
 milestone: v0-10-0
 categories: [platform]
 tags: [plugin, claude-code, mcp, packaging]
 owners: [maintainer]
-nextAction: Release v0.10.0 and verify both install paths from the published tag
 blockers: []
 dependsOn: [SPEC-004]
 related: [SPEC-005]
@@ -24,7 +23,7 @@ sourceRefs:
   - type: file
     value: scripts/check-versions.mjs
 created: 2026-07-24
-updated: 2026-07-24
+updated: 2026-07-25
 ---
 
 ## Intent
@@ -33,12 +32,12 @@ Claude Code users cannot install the dashboard workflows today; only Codex packa
 
 ## Acceptance criteria
 
-- [ ] Publish a repository-root Claude Code marketplace whose entry resolves to the shared plugin directory.
-- [ ] Ship a Claude Code plugin manifest whose MCP server binds to the open project through `${CLAUDE_PROJECT_DIR}`.
-- [ ] Keep the Codex plugin working from a renamed MCP configuration that Claude Code cannot auto-discover.
-- [ ] Express skill tool references without either ecosystem's surface syntax.
-- [ ] Fail CI when any version string or discovered Git tag pin disagrees, and require full alignment on tag pushes.
-- [ ] Document both install paths and the failure mode of a wrongly scoped MCP root.
+- [x] Publish a repository-root Claude Code marketplace whose entry resolves to the shared plugin directory.
+- [x] Ship a Claude Code plugin manifest whose MCP server binds to the open project through `${CLAUDE_PROJECT_DIR}`.
+- [x] Keep the Codex plugin working from a renamed MCP configuration that Claude Code cannot auto-discover.
+- [x] Express skill tool references without either ecosystem's surface syntax.
+- [x] Fail CI when any version string or discovered Git tag pin disagrees, and require full alignment on tag pushes.
+- [x] Document both install paths and the failure mode of a wrongly scoped MCP root.
 
 ## Plan
 

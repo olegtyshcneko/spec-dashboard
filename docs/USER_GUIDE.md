@@ -46,7 +46,7 @@ Spec Dashboard is not a passive documentation daemon. Skills activate when a use
 Run these commands once:
 
 ```sh
-codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.8.0
+codex plugin marketplace add olegtyshcneko/spec-dashboard --ref v0.10.0
 codex plugin add spec-dashboard@spec-dashboard
 ```
 
@@ -234,10 +234,10 @@ Ask Codex:
 Or use the tagged CLI directly:
 
 ```sh
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.8.0 \
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.10.0 \
   specdash validate --root .
 
-npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.8.0 \
+npx --yes --package=github:olegtyshcneko/spec-dashboard#v0.10.0 \
   specdash build --root .
 ```
 
