@@ -1,0 +1,59 @@
+---
+schemaVersion: 1
+id: SPEC-015
+title: Claude Code plugin packaging
+summary: Ship the existing plugin skills and MCP server to Claude Code alongside Codex from one shared plugin directory.
+kind: feature
+state: active
+priority: p1
+milestone: v0-10-0
+categories: [platform]
+tags: [plugin, claude-code, mcp, packaging]
+owners: [maintainer]
+nextAction: Release v0.10.0 and verify both install paths from the published tag
+blockers: []
+dependsOn: [SPEC-004]
+related: [SPEC-005]
+sourceRefs:
+  - type: file
+    value: docs/superpowers/specs/2026-07-24-claude-code-plugin-design.md
+  - type: file
+    value: plugins/spec-dashboard/.claude-plugin/plugin.json
+  - type: file
+    value: .claude-plugin/marketplace.json
+  - type: file
+    value: scripts/check-versions.mjs
+created: 2026-07-24
+updated: 2026-07-24
+---
+
+## Intent
+
+Claude Code users cannot install the dashboard workflows today; only Codex packaging exists. One plugin directory should serve both ecosystems, with per-tool manifests and MCP launch configuration as the only difference.
+
+## Acceptance criteria
+
+- [ ] Publish a repository-root Claude Code marketplace whose entry resolves to the shared plugin directory.
+- [ ] Ship a Claude Code plugin manifest whose MCP server binds to the open project through `${CLAUDE_PROJECT_DIR}`.
+- [ ] Keep the Codex plugin working from a renamed MCP configuration that Claude Code cannot auto-discover.
+- [ ] Express skill tool references without either ecosystem's surface syntax.
+- [ ] Fail CI when any version string or discovered Git tag pin disagrees, and require full alignment on tag pushes.
+- [ ] Document both install paths and the failure mode of a wrongly scoped MCP root.
+
+## Plan
+
+1. Add the discovery-based version and tag-pin guard with tests and CI wiring.
+2. Split the MCP configurations and add the Claude Code manifests.
+3. Make skill tool references tool-agnostic.
+4. Document both install paths.
+5. Reconcile dashboard content with what actually shipped.
+6. Release v0.10.0 with every version string and tag pin moved together.
+
+## Risks
+
+- Claude Code plugin format details are externally sourced; the manifest linter and local install smokes are the mitigation.
+- The MCP configuration rename touches Codex packaging, so both install paths need verification before and after the release tag.
+
+## Out of scope
+
+claude.ai web and Claude desktop app distribution, marketplace ref-pinning for Claude Code installs, behavioral MCP server changes, and new skills beyond the wording pass.

@@ -65,6 +65,17 @@ milestones:
     status: completed
     startDate: 2026-07-14
     completedDate: 2026-07-18
+  - id: v0-9-0
+    label: v0.9.0 · Search, activity & fluid type
+    description: Global full-text search, the git-derived activity feed, and viewport-scaled typography. Delivered from main without a release tag.
+    status: completed
+    startDate: 2026-07-18
+    completedDate: 2026-07-19
+  - id: v0-10-0
+    label: v0.10.0 · Claude Code plugin
+    description: Claude Code packaging alongside the Codex plugin, with mechanical release guards.
+    status: active
+    startDate: 2026-07-24
   - id: next-release
     label: Next release
     description: Planned work intended for the next versioned delivery.

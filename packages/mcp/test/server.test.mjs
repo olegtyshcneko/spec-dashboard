@@ -25,9 +25,9 @@ test("serves resources and structured tools over stdio", async () => {
 
     const result = await client.callTool({ name: "specdash.validate", arguments: {} });
     assert.equal(result.structuredContent.valid, true);
-    assert.equal(result.structuredContent.specs, 12);
+    assert.equal(result.structuredContent.specs, 15);
     const scan = await client.callTool({ name: "specdash.scan", arguments: {} });
-    assert.equal(scan.structuredContent.nextSpecId, "SPEC-013");
+    assert.equal(scan.structuredContent.nextSpecId, "SPEC-016");
     const milestone = await client.callTool({ name: "specdash.query", arguments: { collection: "specs", milestone: "v0-8-0" } });
     assert.deepEqual(milestone.structuredContent.entries.map((entry) => entry.id).sort(), ["SPEC-009", "SPEC-010", "SPEC-011"]);
     const previousMilestone = await client.callTool({ name: "specdash.query", arguments: { collection: "specs", milestone: "v0-7-0" } });

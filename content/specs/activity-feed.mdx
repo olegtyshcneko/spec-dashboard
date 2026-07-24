@@ -1,0 +1,53 @@
+---
+schemaVersion: 1
+id: SPEC-013
+title: Git-derived activity feed
+summary: Show what changed in the dashboard over time by deriving creations, lifecycle moves, and edits from Git history.
+kind: feature
+state: shipped
+priority: p1
+milestone: v0-9-0
+categories: [platform]
+tags: [git, activity, history]
+owners: [maintainer]
+blockers: []
+dependsOn: [SPEC-002]
+related: [SPEC-003]
+sourceRefs:
+  - type: file
+    value: packages/core/src/activity.ts
+  - type: file
+    value: packages/renderer/src/pages/activity/index.astro
+  - type: file
+    value: packages/renderer/src/components/ActivityHistory.astro
+  - type: file
+    value: docs/superpowers/specs/2026-07-18-activity-feed-design.md
+created: 2026-07-18
+updated: 2026-07-19
+---
+
+## Intent
+
+Let a reader see how the dashboard reached its current state — when entries were created, when work moved between lifecycle states, and when content was edited — without reading Git history by hand.
+
+## Acceptance criteria
+
+- [x] Derive activity from first-parent Git history over the configured content directories, reading historical frontmatter to detect tracked-field changes.
+- [x] Emit creation, lifecycle transition, metadata change, edit, and removal events with commit, timestamp, and author attribution.
+- [x] Degrade gracefully without Git, on shallow clones, and on Git older than 2.42, building the dashboard without activity rather than failing.
+- [x] Render a filterable activity page with URL-backed filters.
+- [x] Show per-entry history sections on specification and knowledge detail pages.
+
+## Verification
+
+- Core integration tests drive a scripted temporary repository covering creation, body-only edits, state flips, milestone moves, renames within and across content directories, typechanges, deletions, ID changes, malformed-frontmatter spans, and a divergent-branch merge.
+- The Pages workflow checks out full history (`fetch-depth: 0`) so deployed builds carry activity.
+
+## Risks
+
+- Activity depends on commit history quality; squashed or rewritten history changes attribution.
+- Large histories increase extraction cost at build time.
+
+## Out of scope
+
+Delivery metrics such as cycle time and throughput, owner-change events, activity in MCP resources, and RSS or JSON activity feeds.

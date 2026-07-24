@@ -1,0 +1,50 @@
+---
+schemaVersion: 1
+id: SPEC-014
+title: Fluid viewport-scaled typography
+summary: Scale the type system with viewport width so the dashboard stays proportionate on large displays.
+kind: chore
+state: shipped
+priority: p2
+milestone: v0-9-0
+categories: [experience]
+tags: [typography, responsive, accessibility]
+owners: [maintainer]
+blockers: []
+dependsOn: []
+related: [SPEC-010]
+sourceRefs:
+  - type: commit
+    value: c5ecc28
+    label: feat(renderer) fluid viewport-scaled typography for large displays
+  - type: file
+    value: assets/style.css
+  - type: file
+    value: packages/renderer/src/styles/global.css
+created: 2026-07-19
+updated: 2026-07-19
+---
+
+## Intent
+
+On large displays the fixed type scale left the dashboard reading as a small page stretched across a wide screen. Type, spacing, and component sizing should scale with the viewport instead of stepping only at breakpoints.
+
+## Acceptance criteria
+
+- [x] Express the type scale in fluid, viewport-relative tokens rather than fixed pixel sizes.
+- [x] Keep the scale bounded at both ends so small viewports stay readable and very large ones do not overshoot.
+- [x] Apply the fluid tokens across shared component styles and page-specific styles from the same token set.
+- [x] Preserve the existing font faces, mono display identity, and contrast floor established by SPEC-010.
+
+## Verification
+
+- Rendered pages inspected across small, standard, and large viewport widths.
+- Shared and page-level stylesheets consume the same tokens, so no page carries an independent scale.
+
+## Risks
+
+- Viewport-relative sizing interacts with browser zoom and user font-size preferences; the bounded clamp limits, but does not eliminate, surprising combinations.
+
+## Out of scope
+
+Theme switching, further identity work, and per-page typographic exceptions.
