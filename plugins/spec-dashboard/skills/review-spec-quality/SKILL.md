@@ -11,13 +11,13 @@ Read [references/readiness-rubric.md](references/readiness-rubric.md) before rev
 
 ## Workflow
 
-1. Call `specdash.validate` and query the requested entries. Treat schema errors and broken references as blockers, not stylistic feedback.
+1. Call the spec-dashboard `validate` tool and query the requested entries. Treat schema errors and broken references as blockers, not stylistic feedback.
 2. Read each full item resource plus linked dependencies, backlinks, sources, code, tests, issues, or PRs needed to verify its claims.
 3. Apply the rubric for the item's current lifecycle state. Do not require implementation-level detail from an idea or accept idea-level detail for ready or active work.
 4. Report findings first, ordered by impact. Cite the entry and the concrete missing, vague, contradictory, or unsupported statement.
 5. Distinguish deterministic diagnostics from semantic review findings.
 6. Do not edit during a review-only request. When the user asks for fixes, use preview-first changes and preserve stable IDs and valid historical decisions.
-7. Re-run `specdash.validate` after fixes and build when content changed.
+7. Re-run the `validate` tool after fixes and build when content changed.
 
 ## Review standard
 

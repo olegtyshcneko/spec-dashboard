@@ -9,7 +9,7 @@ Find dashboard drift and produce evidence-backed, reviewable changes.
 
 ## Workflow
 
-1. Call `specdash.scan`, `specdash.validate`, `specdash.reconcile`, and relevant `specdash.query` filters to establish current dashboard state. Pass the requested Git boundary to `specdash.reconcile` when one is available.
+1. Call the spec-dashboard `scan`, `validate`, and `reconcile` tools plus relevant `query` filters to establish current dashboard state. Pass the requested Git boundary to `reconcile` when one is available.
 2. Inspect the reconciliation suggestions and supplement them with authoritative project evidence: working-tree changes, commits, branches, tests, issues, PRs, releases, and configured source files.
 3. Classify each mismatch as:
    - mechanical drift: stale path, date, backlink, or regenerated index;
@@ -18,9 +18,9 @@ Find dashboard drift and produce evidence-backed, reviewable changes.
    - unsupported dashboard claim: documented state or behavior without current evidence.
 4. Report findings with item ID, evidence, proposed change, and confidence. Do not use commit-message similarity as proof.
 5. Never mark an item shipped from an open PR, branch name, completed code alone, or unchecked acceptance criteria. Require the project-specific release boundary and verification evidence.
-6. Use `specdash.preview_transition` for allowed lifecycle changes and `specdash.preview_change` for content edits. Present semantic previews before applying unless the user explicitly requested those exact updates.
+6. Use the `preview_transition` tool for allowed lifecycle changes and `preview_change` for content edits. Present semantic previews before applying unless the user explicitly requested those exact updates.
 7. Apply approved previews with their expected revisions. Stop if concurrent edits invalidate a preview.
-8. Finish with `specdash.validate` and `specdash.build`.
+8. Finish with the `validate` and `build` tools.
 
 ## Boundaries
 
