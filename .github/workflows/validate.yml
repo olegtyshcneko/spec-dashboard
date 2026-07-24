@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
+    tags: ['v*']
 
 permissions:
   contents: read
@@ -26,6 +27,13 @@ jobs:
         run: npm ci
       - name: Run tests
         run: npm test
+      - name: Check version and tag-pin consistency
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            npm run check:versions -- --release
+          else
+            npm run check:versions
+          fi
       - name: Validate dashboard content
         run: npm run validate
       - name: Reconcile Git evidence
